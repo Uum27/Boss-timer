@@ -1,0 +1,130 @@
+<resources>
+    <string name="app_name">Boss计时器</string>
+
+    <string name="search_hint">搜索Boss名称…</string>
+    <string name="column_name">名称</string>
+    <string name="column_refresh">刷新\n时间</string>
+    <string name="column_remaining">剩余\n时间</string>
+    <string name="column_edit">修\n改</string>
+    <string name="column_reset">重\n置</string>
+    <string name="column_delete">删\n除</string>
+    <string name="column_notify">提\n醒</string>
+    <string name="button_toggle_float">开启悬浮窗</string>
+    <string name="button_toggle_float_off">关闭悬浮窗</string>
+    <string name="button_add_row">添加新行</string>
+    <string name="button_donate">打赏</string>
+    <string name="button_view_database">查看数据库</string>
+    <string name="author_text">作者：悉尼巧克力/Uum</string>
+    <string name="contact_text">有问题请联系qq：1781391759/810026494</string>
+
+    <string name="float_title_name">名称</string>
+    <string name="float_title_refresh">刷新时间</string>
+    <string name="float_title_remaining">剩余</string>
+    <string name="float_title_reset">重置</string>
+    <string name="float_button_minimize">最小化</string>
+    <string name="refreshed">已刷新</string>
+    <string name="input_name_label">名称</string>
+    <string name="input_reset_time_label">重置时间</string>
+    <string name="input_auto_reset_label">自动重置</string>
+    <string name="input_advance_notify_label">提前提醒</string>
+    <string name="input_show_in_float_label">悬浮窗中显示</string>
+    <string name="input_extra_label">备注</string>
+    <string name="input_hour_hint">时</string>
+    <string name="input_minute_hint">分</string>
+    <string name="input_second_hint">秒</string>
+
+    <string name="edit_name_label">名称：</string>
+    <string name="edit_killed_time_label">上一只死亡时间：\n（与后两项三选一，优先级从上往下）</string>
+    <string name="edit_next_spawn_label">下一只刷新时间：</string>
+    <string name="edit_remaining_label">剩余时间：</string>
+    <string name="edit_auto_reset_label">自动重置：</string>
+    <string name="edit_notify_ahead_label">提前提醒时间：</string>
+    <string name="edit_show_in_float_label">悬浮窗中显示：</string>
+    <string name="edit_extra_label">备注：</string>
+    <string name="edit_current_info_label">当前信息：</string>
+    <string name="edit_extra_hint">补充信息</string>
+    <string name="edit_current_info_hint">当前信息</string>
+    <string name="edit_killed_days_hint">几天前</string>
+    <string name="edit_next_days_hint">几天后</string>
+
+    <string name="dialog_title_add">添加新项目</string>
+    <string name="dialog_title_edit">修改信息</string>
+    <string name="dialog_title_database">数据库</string>
+    <string name="dialog_button_ok">确定</string>
+    <string name="dialog_button_cancel">取消</string>
+
+    <string name="author_dialog_title">作者声明</string>
+    <string name="author_statement">本应用用于Boss计时，数据仅保存在本地，不会上传。</string>
+
+    <string name="donate_title">感谢支持</string>
+    <string name="donate_subtitle">扫码打赏</string>
+    <string name="donate_close">关闭</string>
+
+    <string name="notification_title">Boss即将刷新</string>
+    <string name="notification_content">%s 还有%d时%d分%d秒刷新~</string>
+
+    <string-array name="day_labels">
+        <item>今</item>
+        <item>明</item>
+        <item>后</item>
+        <item>三</item>
+        <item>四</item>
+        <item>五</item>
+        <item>六</item>
+        <item>久</item>
+    </string-array>
+    <string-array name="start_day_labels">
+        <item>今</item>
+        <item>昨</item>
+        <item>前</item>
+        <item>三天前</item>
+        <item>四天前</item>
+        <item>五天前</item>
+        <item>六天前</item>
+        <item>很久前</item>
+    </string-array>
+
+    <string name="timer_service_notification_title">Boss计时器</string>
+    <string name="timer_service_notification_text">运行中</string>
+
+    <string name="floating_service_notification_title">悬浮窗服务</string>
+    <string name="floating_service_notification_text">正在运行悬浮窗服务</string>
+
+    <string name="battery_opt_title">省电策略提醒</string>
+    <string name="battery_opt_message">为确保应用正常运行，建议将省电策略设置为无限制。\n如果不是无限制，则锁屏后无法正常震动提醒。\n\n设置路径：设置 -> 电池 -> 省电优化 -> 找到本应用 -> 选择无限制</string>
+    <string name="battery_opt_positive">立即设置</string>
+    <string name="battery_opt_negative">稍后设置</string>
+
+    <!-- 默认占位文本 -->
+    <string name="default_unknown">未知</string>
+    <string name="default_none">无</string>
+
+    <!-- 是/否 -->
+    <string name="yes">是</string>
+    <string name="no">否</string>
+
+    <!-- 编辑对话框信息格式 -->
+    <string name="edit_current_info_format">名称：%s\n重置时间：%d时%d分%d秒\n自动重置：%s\n开始时间：%s\n是否通知：%s\n提前提醒时间：%d时%d分%d秒\n在悬浮窗中显示：%s\n备注：%s</string>
+
+    <!-- 通知权限相关 -->
+    <string name="notification_permission_title">需要锁屏显示权限</string>
+    <string name="notification_permission_message">请在设置中允许在锁屏显示通知，以便锁屏时允许Boss刷新震动提醒</string>
+    <string name="go_to_settings">去设置</string>
+    <string name="notification_settings_toast">请在设置中允许锁屏显示通知</string>
+
+    <!-- 通知渠道名称和描述 -->
+    <string name="notification_channel_name">Boss 计时器</string>
+    <string name="notification_channel_description">Boss刷新提醒</string>
+
+    <string name="timer_service_channel_description">Boss刷新提醒通道</string>
+
+    <!-- 悬浮窗共享模式 -->
+    <string name="float_share_mode_local">本地</string>
+    <string name="float_share_mode_shared">共享</string>
+
+
+    <string name="language_select_title">选择语言</string>
+    <string name="language_chinese">中文</string>
+    <string name="language_english">English</string>
+    <string name="language_korean">한국어</string>
+</resources>

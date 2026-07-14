@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- 内容行 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingVertical="8dp">
+
+        <TextView
+            android:id="@+id/text1"
+            android:gravity="center"
+            android:textSize="16sp"
+            android:layout_width="0dp"
+            android:layout_weight="16"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:text="@string/column_name" />
+
+        <TextView
+            android:id="@+id/text2"
+            android:gravity="center"
+            android:textSize="16sp"
+            android:layout_width="0dp"
+            android:layout_weight="22"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:text="@string/column_refresh" />
+
+        <TextView
+            android:id="@+id/text3"
+            android:gravity="center"
+            android:textSize="16sp"
+            android:layout_width="0dp"
+            android:layout_weight="21"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:text="@string/column_remaining" />
+
+        <ImageButton
+            android:id="@+id/btn_edit"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="7"
+            android:background="@android:color/transparent"
+            android:gravity="center"
+            android:scaleType="centerInside"
+            android:src="@drawable/edit" />
+
+        <ImageButton
+            android:id="@+id/btn_reset"
+            android:gravity="center"
+            android:layout_width="0dp"
+            android:layout_weight="7"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:src="@drawable/reset"
+            android:layout_gravity="center_vertical"
+            android:scaleType="centerInside" />
+
+        <ImageButton
+            android:id="@+id/btn_delete"
+            android:gravity="center"
+            android:layout_width="0dp"
+            android:layout_weight="7"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:src="@drawable/delete"
+            android:layout_gravity="center_vertical"
+            android:scaleType="centerInside" />
+
+        <CheckBox
+            android:id="@+id/chk_isNotify"
+            android:layout_width="0dp"
+            android:layout_weight="7"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:layout_gravity="center_vertical"
+            android:checked="true"/>
+
+    </LinearLayout>
+
+    <!-- 分割线 -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E0E0E0"
+        android:layout_marginStart="3dp"
+        android:layout_marginEnd="3dp" />
+
+</LinearLayout>
