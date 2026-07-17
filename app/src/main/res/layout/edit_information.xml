@@ -18,7 +18,7 @@
             android:layout_marginTop="2dp">
 
             <TextView
-                android:layout_width="48dp"
+                android:layout_width="60dp"
                 android:layout_height="wrap_content"
                 android:text="@string/edit_name_label"
                 android:textSize="16sp" />
@@ -38,161 +38,212 @@
             android:layout_marginTop="4dp"
             android:layout_marginBottom="8dp" />
 
-        <!-- 上一只死亡时间 -->
+        <!-- ★ 展开/收起标题（居中） -->
         <TextView
+            android:id="@+id/advanced_toggle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/edit_killed_time_label"
-            android:textSize="16sp"/>
+            android:text="@string/advanced_time_title"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:gravity="center"
+            android:padding="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground" />
 
+        <!-- ★ 折叠内容（包含三个时间部分） -->
         <LinearLayout
+            android:id="@+id/advanced_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="2dp">
+            android:orientation="vertical"
+            android:visibility="gone">
 
-            <EditText
-                android:id="@+id/edit_killed_day"
-                android:layout_weight="1"
-                android:layout_width="0dp"
+            <!-- 上一只死亡时间 -->
+            <TextView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/edit_killed_days_hint"/>
+                android:text="@string/edit_killed_time_label"
+                android:textSize="16sp"
+                android:layout_marginTop="8dp"/>
 
-            <EditText
-                android:id="@+id/edit_killed_hour"
-                android:layout_weight="1"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/input_hour_hint"/>
+                android:orientation="horizontal"
+                android:layout_marginTop="2dp">
+                <EditText
+                    android:id="@+id/edit_killed_day"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:hint="@string/edit_killed_days_hint"/>
+                <EditText
+                    android:id="@+id/edit_killed_hour"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:hint="@string/input_hour_hint"/>
+                <EditText
+                    android:id="@+id/edit_killed_minute"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:hint="@string/input_minute_hint"/>
+                <EditText
+                    android:id="@+id/edit_killed_second"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:hint="@string/input_second_hint"/>
+            </LinearLayout>
 
-            <EditText
-                android:id="@+id/edit_killed_minute"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/input_minute_hint"/>
+            <!-- 分割线 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="8dp" />
 
-            <EditText
-                android:id="@+id/edit_killed_second"
-                android:layout_weight="1"
-                android:layout_width="0dp"
+            <!-- 下一只刷新时间 -->
+            <TextView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/input_second_hint"/>
-        </LinearLayout>
+                android:text="@string/edit_next_spawn_label"
+                android:textSize="16sp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="2dp">
+                <EditText
+                    android:id="@+id/edit_need_day"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:hint="@string/edit_next_days_hint"/>
+                <EditText
+                    android:id="@+id/edit_need_hour"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:hint="@string/input_hour_hint"/>
+                <EditText
+                    android:id="@+id/edit_need_minute"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:hint="@string/input_minute_hint"/>
+                <EditText
+                    android:id="@+id/edit_need_second"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:hint="@string/input_second_hint"/>
+            </LinearLayout>
+
+            <!-- 分割线 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- 剩余时间 -->
+            <TextView
+                android:layout_width="379dp"
+                android:layout_height="31dp"
+                android:text="@string/edit_remaining_label"
+                android:textSize="16sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="2dp">
+                <EditText
+                    android:id="@+id/edit_spawn_hour"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:hint="@string/input_hour_hint"/>
+                <EditText
+                    android:id="@+id/edit_spawn_minute"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:hint="@string/input_minute_hint"/>
+                <EditText
+                    android:id="@+id/edit_spawn_second"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:hint="@string/input_second_hint"/>
+            </LinearLayout>
+
+        </LinearLayout> <!-- 结束折叠内容 -->
 
         <!-- 分割线 -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="#E0E0E0"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp" />
 
-        <!-- 下一只刷新时间 -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/edit_next_spawn_label"
-            android:textSize="16sp"/>
-
+        <!-- 悬浮窗中显示 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginTop="2dp">
-
-            <EditText
-                android:id="@+id/edit_need_day"
-                android:layout_weight="1"
-                android:layout_width="0dp"
+            <TextView
+                android:layout_width="140dp"
+                android:layout_height="28dp"
+                android:text="@string/edit_show_in_float_label"
+                android:textSize="16sp" />
+            <CheckBox
+                android:id="@+id/chk_show_in_float"
+                android:layout_width="55dp"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/edit_next_days_hint"/>
-
-            <EditText
-                android:id="@+id/edit_need_hour"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/input_hour_hint"/>
-
-            <EditText
-                android:id="@+id/edit_need_minute"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/input_minute_hint"/>
-
-            <EditText
-                android:id="@+id/edit_need_second"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/input_second_hint"/>
-        </LinearLayout>
-
-        <!-- 分割线 -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#E0E0E0"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="8dp" />
-
-        <!-- 剩余时间 -->
-        <TextView
-            android:layout_width="379dp"
-            android:layout_height="31dp"
-            android:text="@string/edit_remaining_label"
-            android:textSize="16sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="2dp">
-
-            <EditText
-                android:id="@+id/edit_spawn_hour"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/input_hour_hint"/>
-
-            <EditText
-                android:id="@+id/edit_spawn_minute"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/input_minute_hint"/>
-
-            <EditText
-                android:id="@+id/edit_spawn_second"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:layout_marginBottom="8dp"
-                android:hint="@string/input_second_hint"/>
+                android:checked="true" />
         </LinearLayout>
 
         <!-- 分割线 -->
@@ -209,13 +260,11 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginTop="2dp">
-
             <TextView
                 android:layout_width="140dp"
                 android:layout_height="27dp"
                 android:text="@string/edit_auto_reset_label"
                 android:textSize="16sp" />
-
             <CheckBox
                 android:id="@+id/chk_auto_reset"
                 android:layout_width="55dp"
@@ -243,7 +292,6 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginTop="2dp">
-
             <EditText
                 android:id="@+id/edit_notify_hour"
                 android:layout_weight="1"
@@ -251,8 +299,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="number"
                 android:layout_marginBottom="8dp"
+                android:gravity="center"
                 android:hint="@string/input_hour_hint"/>
-
             <EditText
                 android:id="@+id/edit_notify_minute"
                 android:layout_weight="1"
@@ -260,8 +308,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="number"
                 android:layout_marginBottom="8dp"
+                android:gravity="center"
                 android:hint="@string/input_minute_hint"/>
-
             <EditText
                 android:id="@+id/edit_notify_second"
                 android:layout_weight="1"
@@ -269,6 +317,7 @@
                 android:layout_height="wrap_content"
                 android:inputType="number"
                 android:layout_marginBottom="8dp"
+                android:gravity="center"
                 android:hint="@string/input_second_hint"/>
         </LinearLayout>
 
@@ -280,52 +329,27 @@
             android:layout_marginTop="4dp"
             android:layout_marginBottom="8dp" />
 
-        <!-- 悬浮窗中显示 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="2dp">
-
-            <TextView
-                android:layout_width="140dp"
-                android:layout_height="28dp"
-                android:text="@string/edit_show_in_float_label"
-                android:textSize="16sp" />
-
-            <CheckBox
-                android:id="@+id/chk_show_in_float"
-                android:layout_width="55dp"
-                android:layout_height="wrap_content"
-                android:checked="true" />
-        </LinearLayout>
-
-        <!-- 分割线 -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#E0E0E0"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="8dp" />
 
         <!-- 备注 -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="2dp">
+            android:layout_height="65dp"
+            android:layout_marginTop="2dp"
+            android:orientation="horizontal">
+
             <TextView
                 android:layout_width="40dp"
                 android:layout_height="wrap_content"
                 android:text="@string/edit_extra_label"
-                android:textSize="16sp"/>
+                android:textSize="16sp" />
+
             <EditText
                 android:id="@+id/edit_extra"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
+                android:layout_marginBottom="8dp"
                 android:hint="@string/edit_extra_hint"
-                android:layout_marginBottom="8dp"/>
+                android:inputType="textMultiLine" />
         </LinearLayout>
 
         <!-- 分割线 -->

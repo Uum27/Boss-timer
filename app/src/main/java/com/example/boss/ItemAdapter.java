@@ -38,6 +38,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     private Context context;
     public String filteredString = "";
     private boolean hadRefreshedDay;
+    private OnRowClickListener rowClickListener;
 
     public ItemAdapter(Context context) {
         this.context = context;
@@ -104,7 +105,9 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     }
 
     public interface OnRowClickListener {
-        void onButtonClick(int position);
+        void onText1Click(int position);
+        void onText2Click(int position);
+        void onText3Click(int position);
     }
 
     public void setOnButtonClickListener(OnButtonClickListener listener) {
@@ -199,6 +202,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
 
     public void setOnRowClickListener(OnRowClickListener listener) {
         this.listener = listener;
+        this.rowClickListener = listener;
     }
 
     public void addRow(RowData data) {
@@ -273,6 +277,24 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
             refreshData();
             EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.NOTIFY_ITEM, position));
         });
+
+        // ★ 新增：点击 text1 text2 和 text3 触发回调
+        holder.text1.setOnClickListener(v -> {
+            if (rowClickListener != null) {
+                rowClickListener.onText1Click(position);
+            }
+        });
+        holder.text2.setOnClickListener(v -> {
+            if (rowClickListener != null) {
+                rowClickListener.onText2Click(position);
+            }
+        });
+        holder.text3.setOnClickListener(v -> {
+            if (rowClickListener != null) {
+                rowClickListener.onText3Click(position);
+            }
+        });
+
 
         holder.bind(data);
     }

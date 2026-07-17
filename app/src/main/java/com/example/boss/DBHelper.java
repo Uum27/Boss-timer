@@ -216,6 +216,7 @@ public class DBHelper extends SQLiteOpenHelper {
         long id = data.id;
         values.put(COLUMN_NAME, data.text1);
         values.put(COLUMN_START_TIME, data.startTime);
+        values.put(COLUMN_SPAWN, data.spawnTime);
         values.put(COLUMN_EXTRA, data.extraInfo);
         values.put(COLUMN_IS_NOTIFIED, data.isNotified ? 1 : 0);
         values.put(COLUMN_NOTIFY_TIME, data.notifyTime);

@@ -37,8 +37,8 @@ public class RowData {
         long elapsedSeconds = this.startTime / 1000 + this.spawnTime - System.currentTimeMillis() / 1000;
 
         if (elapsedSeconds > 0) {
-            // 构建时间字符串 HH:mm:ss
-            String timeString = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+            // 构建刷新时间字符串 HH:mm:ss
+            String timeString = String.format(Locale.getDefault(), "%02d:%02d",
                     respawnCalendar.get(Calendar.HOUR_OF_DAY),
                     respawnCalendar.get(Calendar.MINUTE),
                     respawnCalendar.get(Calendar.SECOND));
@@ -89,7 +89,7 @@ public class RowData {
 
         Calendar currentCalendar = Calendar.getInstance();
         currentCalendar.setTimeInMillis(currentTime);
-
+         //剩余时间字符串  HH:mm:ss
         String startTimeText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
                 startCalendar.get(Calendar.HOUR_OF_DAY),
                 startCalendar.get(Calendar.MINUTE),

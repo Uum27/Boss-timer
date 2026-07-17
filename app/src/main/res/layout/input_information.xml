@@ -51,6 +51,7 @@
             android:layout_height="wrap_content"
             android:inputType="number"
             android:layout_marginBottom="8dp"
+            android:gravity="center"
             android:hint="@string/input_hour_hint"/>
 
         <EditText
@@ -60,6 +61,7 @@
             android:layout_height="wrap_content"
             android:inputType="number"
             android:layout_marginBottom="8dp"
+            android:gravity="center"
             android:hint="@string/input_minute_hint"/>
 
         <EditText
@@ -69,6 +71,7 @@
             android:layout_height="wrap_content"
             android:inputType="number"
             android:layout_marginBottom="8dp"
+            android:gravity="center"
             android:hint="@string/input_second_hint"/>
     </LinearLayout>
 
@@ -126,6 +129,7 @@
             android:layout_height="wrap_content"
             android:inputType="number"
             android:layout_marginBottom="8dp"
+            android:gravity="center"
             android:hint="@string/input_hour_hint"/>
 
         <EditText
@@ -135,6 +139,7 @@
             android:layout_height="wrap_content"
             android:inputType="number"
             android:layout_marginBottom="8dp"
+            android:gravity="center"
             android:hint="@string/input_minute_hint"/>
 
         <EditText
@@ -144,6 +149,7 @@
             android:layout_height="wrap_content"
             android:inputType="number"
             android:layout_marginBottom="8dp"
+            android:gravity="center"
             android:hint="@string/input_second_hint"/>
     </LinearLayout>
 

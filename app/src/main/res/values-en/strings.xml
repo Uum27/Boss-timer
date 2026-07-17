@@ -5,7 +5,7 @@
     <string name="column_name">Name</string>
     <string name="column_refresh">Refresh\nTime</string>
     <string name="column_remaining">Rem\nTime</string>
-    <string name="column_edit">Edit</string>
+    <string name="column_edit">Ed\nit</string>
     <string name="column_reset">Reset</string>
     <string name="column_delete">Delete</string>
     <string name="column_notify">Notify</string>
@@ -19,23 +19,23 @@
 
     <string name="float_title_name">Name</string>
     <string name="float_title_refresh">Ref.Time</string>
-    <string name="float_title_remaining">Rem.Time</string>
+    <string name="float_title_remaining">Rem</string>
     <string name="float_title_reset">Reset</string>
     <string name="float_button_minimize">Minimize</string>
     <string name="refreshed">Spawned</string>
 
-    <string name="input_name_label">Name</string>
-    <string name="input_reset_time_label">Reset Time</string>
-    <string name="input_auto_reset_label">Auto Reset</string>
-    <string name="input_advance_notify_label">Notify ahead</string>
-    <string name="input_show_in_float_label">Show in Float</string>
-    <string name="input_extra_label">Extra</string>
+    <string name="input_name_label">Name:</string>
+    <string name="input_reset_time_label">Reset Time:</string>
+    <string name="input_auto_reset_label">Auto Reset:</string>
+    <string name="input_advance_notify_label">Notify ahead:</string>
+    <string name="input_show_in_float_label">Show in Float:</string>
+    <string name="input_extra_label">Extra:</string>
     <string name="input_hour_hint">Hour</string>
     <string name="input_minute_hint">Min</string>
     <string name="input_second_hint">Sec</string>
 
     <string name="edit_name_label">Name:</string>
-    <string name="edit_killed_time_label">killed time:\n(choose one of three, priority top to bottom)</string>
+    <string name="edit_killed_time_label">killed time:\n(priority top to bottom)</string>
     <string name="edit_next_spawn_label">Next spawn time:</string>
     <string name="edit_remaining_label">Remaining time:</string>
     <string name="edit_auto_reset_label">Auto Reset:</string>
@@ -98,6 +98,7 @@
 
     <string name="default_unknown">Unknown</string>
     <string name="default_none">None</string>
+
     <string name="yes">Yes</string>
     <string name="no">No</string>
 
@@ -115,7 +116,26 @@
     <!-- Floating window share mode -->
     <string name="float_share_mode_local">Local</string>
     <string name="float_share_mode_shared">Shared</string>
+    <string name="start_time_label">Start Time:</string>
 
+    <string name="dialog_title_edit_time">Edit Refresh Time</string>
+    <string name="dialog_title_edit_remaining">Edit Remaining Time</string>
+    <string name="edit_remaining_invalid">Please enter a valid remaining time</string>
+
+    <string name="end_time_label">End Time:</string>
+    <string name="edit_time_no_change">No changes made, please enter at least one item</string>
+    <string name="edit_time_success">Modification successful</string>
+    <string name="edit_time_day_too_large">Days cannot exceed 366</string>
+    <string name="edit_time_hour_too_large">Hours cannot exceed 24</string>
+    <string name="edit_time_minute_too_large">Minutes cannot exceed 60</string>
+    <string name="edit_time_second_too_large">Seconds cannot exceed 60</string>
+
+    <string name="dialog_title_edit_name">Edit Name &amp; Reset Time</string>
+    <string name="edit_name_success">Name and reset time updated</string>
+    <string name="input_name_hint">Enter Boss name</string>
+
+    <string name="boss_name_prefix">Boss Name: </string>
+    <string name="advanced_time_title">Expand Time Settings</string>
 
     <string name="language_select_title">Select Language</string>
     <string name="language_chinese">中文</string>

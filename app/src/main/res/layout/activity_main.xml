@@ -47,11 +47,12 @@
             android:layout_gravity="center_vertical"/>
     </LinearLayout>
 
-    <!-- 表头 -->
+    <!-- 表头（添加背景色和竖线，保留原有高度属性） -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:background="#F0F0F0">   <!-- 添加浅灰背景 -->
 
         <TextView
             android:id="@+id/text1"
@@ -60,25 +61,43 @@
             android:layout_weight="16"
             android:gravity="center"
             android:text="@string/column_name"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#D0D0D0" />
 
         <TextView
             android:id="@+id/text2"
-            android:gravity="center"
-            android:textSize="16sp"
             android:layout_width="0dp"
+            android:layout_height="56dp"
             android:layout_weight="22"
-            android:layout_height="wrap_content"
-            android:text="@string/column_refresh" />
+            android:gravity="center"
+            android:text="@string/column_refresh"
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#D0D0D0" />
 
         <TextView
             android:id="@+id/text3"
-            android:gravity="center"
-            android:textSize="16sp"
             android:layout_width="0dp"
+            android:layout_height="56dp"
             android:layout_weight="21"
-            android:layout_height="wrap_content"
-            android:text="@string/column_remaining" />
+            android:gravity="center"
+            android:text="@string/column_remaining"
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#D0D0D0" />
 
         <TextView
             android:layout_width="0dp"
@@ -86,7 +105,13 @@
             android:layout_weight="7"
             android:gravity="center"
             android:text="@string/column_edit"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#D0D0D0" />
 
         <TextView
             android:layout_width="0dp"
@@ -94,7 +119,13 @@
             android:layout_weight="7"
             android:gravity="center"
             android:text="@string/column_reset"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#D0D0D0" />
 
         <TextView
             android:layout_width="0dp"
@@ -102,7 +133,13 @@
             android:layout_weight="7"
             android:gravity="center"
             android:text="@string/column_delete"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#D0D0D0" />
 
         <TextView
             android:layout_width="0dp"
@@ -110,7 +147,9 @@
             android:layout_weight="7"
             android:gravity="center"
             android:text="@string/column_notify"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
     </LinearLayout>
 
     <!-- RecyclerView -->
@@ -164,8 +203,6 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
     </LinearLayout>
-
-
 
     <!-- 底部版权信息 -->
     <LinearLayout

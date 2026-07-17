@@ -322,7 +322,7 @@ public class FloatingWindowService extends Service {
         recyclerView.setLayoutParams(recyclerViewParams);
 
         params = new WindowManager.LayoutParams(
-                dpToPx(265),
+                dpToPx(260),
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ?
                         WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY :

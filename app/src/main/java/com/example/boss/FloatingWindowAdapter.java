@@ -212,6 +212,13 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
         } else {
             holder.text3.setTextColor(context.getResources().getColor(android.R.color.white));
         }
+        // ★ 分割线控制：最后一项隐藏
+        View divider = holder.itemView.findViewById(R.id.divider);
+        if (position == getItemCount() - 1) {
+            divider.setVisibility(View.GONE);
+        } else {
+            divider.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override

@@ -1,10 +1,7 @@
 package com.example.boss;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.Dialog;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -32,10 +29,10 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.LinearLayout;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
@@ -50,6 +47,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.greenrobot.eventbus.EventBus;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -90,7 +89,6 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // 通知权限（Android 13+）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -99,7 +97,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // 悬浮窗权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(this)) {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -133,30 +130,49 @@ public class MainActivity extends AppCompatActivity {
         addButton = findViewById(R.id.add_button);
 
         dbHelper = new DBHelper(this);
-        // 如需清空数据，取消注释
         // dbHelper.clearAllBosses();
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ItemAdapter(this);
         recyclerView.setAdapter(adapter);
 
-        adapter.setOnButtonClickListener((position, buttonType) -> {
-            switch (buttonType) {
-                case EDIT:
-                    showEditDialog(adapter, position);
-                    break;
-                case RESET:
-                    adapter.resetTime(position);
-                    break;
-                case DELETE:
-                    adapter.deleteRow(position);
-                    break;
+        // ★ 修改：使用显式匿名内部类代替 Lambda，避免编译歧义
+        adapter.setOnButtonClickListener(new ItemAdapter.OnButtonClickListener() {
+            @Override
+            public void onButtonClick(int position, ItemAdapter.ButtonType buttonType) {
+                switch (buttonType) {
+                    case EDIT:
+                        showEditDialog(adapter, position);
+                        break;
+                    case RESET:
+                        adapter.resetTime(position);
+                        break;
+                    case DELETE:
+                        adapter.deleteRow(position);
+                        break;
+                }
+            }
+        });
+
+        // ★ 行点击监听（实现两个方法）
+        adapter.setOnRowClickListener(new ItemAdapter.OnRowClickListener() {
+            @Override
+            public void onText1Click(int position) {
+                showEditNameDialog(adapter, position);
+            }
+            @Override
+            public void onText2Click(int position) {
+                showEditTimeDialog(adapter, position);
+            }
+
+            @Override
+            public void onText3Click(int position) {
+                showEditRemainingDialog(adapter, position);
             }
         });
 
         addButton.setOnClickListener(v -> showInputDialog());
 
-        // 启动 TimerService
         Intent bossServiceIntent = new Intent(this, TimerService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(bossServiceIntent);
@@ -175,7 +191,6 @@ public class MainActivity extends AppCompatActivity {
             prefs.edit().putBoolean(FIRST_LAUNCH, false).apply();
         }
 
-        // 悬浮窗控制按钮
         Button toggleFloatingButton = findViewById(R.id.toggle_floating);
         toggleFloatingButton.setOnClickListener(v -> {
             if (!isServiceRunning) {
@@ -196,7 +211,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 默认启动悬浮窗
         Intent serviceIntent = new Intent(this, FloatingWindowService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent);
@@ -210,7 +224,6 @@ public class MainActivity extends AppCompatActivity {
         Button donateButton = findViewById(R.id.toggle_money);
         donateButton.setOnClickListener(v -> showDonateDialog());
 
-
         setupSearchInput();
 
         searchInput.setOnEditorActionListener((v, actionId, event) -> {
@@ -223,11 +236,9 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
 
-        // ★ 语言切换按钮
         findViewById(R.id.btn_language).setOnClickListener(v -> showLanguageSwitchDialog());
     }
 
-    // ★ 语言切换对话框
     private void showLanguageSwitchDialog() {
         String[] languages = {
                 getString(R.string.language_chinese),
@@ -240,9 +251,7 @@ public class MainActivity extends AppCompatActivity {
                 .setItems(languages, (dialog, which) -> {
                     String lang = codes[which];
                     LocaleHelper.saveLanguage(this, lang);
-                    // 重新创建 Activity 应用新语言
                     recreate();
-                    // 通知悬浮窗更新语言
                     EventBus.getDefault().post(new LanguageChangeEvent());
                 })
                 .show();
@@ -286,7 +295,7 @@ public class MainActivity extends AppCompatActivity {
         return super.dispatchTouchEvent(ev);
     }
 
-    // 添加新项目对话框
+    // 添加对话框
     private void showInputDialog() {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.input_information, null);
         EditText nameInput = dialogView.findViewById(R.id.input_name);
@@ -324,14 +333,14 @@ public class MainActivity extends AppCompatActivity {
                     if (!notifyHourText.isEmpty()) notify += Long.parseLong(notifyHourText) * 3600;
                     if (!notifyMinuteText.isEmpty()) notify += Long.parseLong(notifyMinuteText) * 60;
                     if (!notifySecondText.isEmpty()) notify += Long.parseLong(notifySecondText);
-                    if (notify == 0) notify = 300; // 默认5分钟
+                    if (notify == 0) notify = 300;
 
                     RowData data = new RowData();
                     data.text1 = name.isEmpty() ? getString(R.string.default_unknown) : name;
                     data.spawnTime = spawn;
                     data.extraInfo = extra.isEmpty() ? getString(R.string.default_none) : extra;
                     data.startTime = System.currentTimeMillis();
-                    data.setSpawnTime(this); // 使用当前语言
+                    data.setSpawnTime(this);
                     if (data.spawnTime / 3600 > 0) {
                         data.text3 = String.format(Locale.getDefault(), "%02d:%02d:%02d",
                                 data.spawnTime / 3600,
@@ -357,7 +366,7 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // 编辑对话框
+    // 完整编辑对话框
     private void showEditDialog(ItemAdapter adapter, int position) {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.edit_information, null);
         EditText nameInput = dialogView.findViewById(R.id.edit_name);
@@ -385,7 +394,6 @@ public class MainActivity extends AppCompatActivity {
         autoReset.setChecked(data.autoReset);
         showInFloat.setChecked(data.showInFloat);
 
-        // 使用资源格式化当前信息
         String info = String.format(Locale.getDefault(),
                 getString(R.string.edit_current_info_format),
                 data.text1,
@@ -449,7 +457,6 @@ public class MainActivity extends AppCompatActivity {
                     if (!name.isEmpty()) data.text1 = name;
                     if (!extra.isEmpty()) data.extraInfo = extra;
 
-                    // 处理时间更新
                     if (spawnTime) {
                         Calendar spawnCalendar = Calendar.getInstance();
                         if (!spawnDayText.isEmpty()) spawnCalendar.add(Calendar.DAY_OF_MONTH, Integer.parseInt(spawnDayText));
@@ -508,21 +515,322 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .setNegativeButton(R.string.dialog_button_cancel, null)
                 .create();
+        // 折叠功能（使用单个 TextView 切换文本）
+        TextView toggleText = dialogView.findViewById(R.id.advanced_toggle);
+        LinearLayout contentLayout = dialogView.findViewById(R.id.advanced_content);
+
+// 初始状态为折叠
+        contentLayout.setVisibility(View.GONE);
+        toggleText.setText(getString(R.string.advanced_time_title) + " ▶");
+
+        toggleText.setOnClickListener(v -> {
+            if (contentLayout.getVisibility() == View.GONE) {
+                contentLayout.setVisibility(View.VISIBLE);
+                toggleText.setText(getString(R.string.advanced_time_title) + " ▼");
+            } else {
+                contentLayout.setVisibility(View.GONE);
+                toggleText.setText(getString(R.string.advanced_time_title) + " ▶");
+            }
+        });
         dialog.show();
-        // ★ 调整对话框窗口大小，使其高度为屏幕的 80%，并允许 ScrollView 滚动
+        // 优化窗口高度
         Window window = dialog.getWindow();
         if (window != null) {
             WindowManager.LayoutParams params = window.getAttributes();
             params.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.9);
-            // 关键：将高度设为屏幕高度的 80%，这样 ScrollView 就能在有限高度内滚动
-            params.height = (int) (getResources().getDisplayMetrics().heightPixels * 0.8);
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT;
             window.setAttributes(params);
-            // 当软键盘弹出时自动调整布局，避免遮挡
             window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
     }
 
-    // 作者声明对话框
+    // ★ 修改名称和刷新周期（不重置开始时间，保留当前周期数值）
+    private void showEditNameDialog(ItemAdapter adapter, int position) {
+        RowData data = adapter.dataList.get(position);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_name, null);
+
+        EditText nameInput = dialogView.findViewById(R.id.edit_name);
+        EditText hourInput = dialogView.findViewById(R.id.edit_hour);
+        EditText minuteInput = dialogView.findViewById(R.id.edit_minute);
+        EditText secondInput = dialogView.findViewById(R.id.edit_second);
+
+        // 预填当前名称
+        nameInput.setText(data.text1);
+
+        // ★ 预填当前周期（时/分/秒）
+        long spawn = data.spawnTime;
+        long hours = spawn / 3600;
+        long minutes = (spawn % 3600) / 60;
+        long seconds = spawn % 60;
+        hourInput.setText(String.valueOf(hours));
+        minuteInput.setText(String.valueOf(minutes));
+        secondInput.setText(String.valueOf(seconds));
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_title_edit_name)
+                .setView(dialogView)
+                .setPositiveButton(R.string.dialog_button_ok, (di, which) -> {
+                    // 更新名称
+                    String newName = nameInput.getText().toString().trim();
+                    if (!newName.isEmpty()) {
+                        data.text1 = newName;
+                    }
+
+                    // 解析新周期（仅时/分/秒）
+                    long h = parseLongOrDefault(hourInput.getText().toString().trim(), 0);
+                    long m = parseLongOrDefault(minuteInput.getText().toString().trim(), 0);
+                    long s = parseLongOrDefault(secondInput.getText().toString().trim(), 0);
+                    long newSpawn = h * 3600 + m * 60 + s;  // ★ 确保 newSpawn 定义在此
+
+                    // 若输入了有效周期，则更新 spawnTime，保留 startTime 不变
+                    if (newSpawn > 0) {
+                        data.spawnTime = newSpawn;
+                        data.isNotified = false; // 重置通知状态
+                    }
+
+                    // 重新计算显示
+                    data.setSpawnTime(this);
+                    long remaining = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
+                    if (remaining < 0) remaining = 0;
+                    if (remaining >= 3600) {
+                        data.text3 = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                                remaining / 3600, (remaining % 3600) / 60, remaining % 60);
+                    } else {
+                        data.text3 = String.format(Locale.getDefault(), "%02d:%02d",
+                                remaining / 60, remaining % 60);
+                    }
+
+                    dbHelper.editBoss(data);
+                    EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, data));
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(this, R.string.edit_name_success, Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton(R.string.dialog_button_cancel, null)
+                .create();
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.9);
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT;
+            window.setAttributes(params);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+    }
+
+    // ★ 修改时间对话框（死亡时间 + 下一次刷新周期）
+    private void showEditTimeDialog(ItemAdapter adapter, int position) {
+        RowData data = adapter.dataList.get(position);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_time, null);
+        TextView tvBossName = dialogView.findViewById(R.id.tv_boss_name);
+        tvBossName.setText(getString(R.string.boss_name_prefix) + data.text1);
+
+        EditText killedDay = dialogView.findViewById(R.id.edit_killed_day);
+        EditText killedHour = dialogView.findViewById(R.id.edit_killed_hour);
+        EditText killedMinute = dialogView.findViewById(R.id.edit_killed_minute);
+        EditText killedSecond = dialogView.findViewById(R.id.edit_killed_second);
+        EditText needDay = dialogView.findViewById(R.id.edit_need_day);      // 忽略，不校验
+        EditText needHour = dialogView.findViewById(R.id.edit_need_hour);
+        EditText needMinute = dialogView.findViewById(R.id.edit_need_minute);
+        EditText needSecond = dialogView.findViewById(R.id.edit_need_second);
+
+        // 左下角显示结束时间
+        TextView tvEndTime = dialogView.findViewById(R.id.tv_start_time);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd   HH:mm:ss", Locale.getDefault());
+        long endTimeMillis = data.startTime + data.spawnTime * 1000;
+        tvEndTime.setText(getString(R.string.end_time_label) + " " + sdf.format(new Date(endTimeMillis)));
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_title_edit_time)
+                .setView(dialogView)
+                .setPositiveButton(R.string.dialog_button_ok, (di, which) -> {
+                    // 1. 读取输入
+                    String killedDayText = killedDay.getText().toString().trim();
+                    String killedHourText = killedHour.getText().toString().trim();
+                    String killedMinuteText = killedMinute.getText().toString().trim();
+                    String killedSecondText = killedSecond.getText().toString().trim();
+                    String spawnHourText = needHour.getText().toString().trim();
+                    String spawnMinuteText = needMinute.getText().toString().trim();
+                    String spawnSecondText = needSecond.getText().toString().trim();
+
+                    boolean hasKilled = !killedDayText.isEmpty() || !killedHourText.isEmpty() ||
+                            !killedMinuteText.isEmpty() || !killedSecondText.isEmpty();
+                    boolean hasSpawn = !spawnHourText.isEmpty() || !spawnMinuteText.isEmpty() || !spawnSecondText.isEmpty();
+
+                    if (!hasKilled && !hasSpawn) {
+                        Toast.makeText(this, R.string.edit_time_no_change, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    // 2. 校验范围（只校验有输入的字段）
+                    // 2.1 校验“上一只死亡时间”
+                    if (hasKilled) {
+                        long d = parseLongOrDefault(killedDayText, 0);
+                        long h = parseLongOrDefault(killedHourText, 0);
+                        long m = parseLongOrDefault(killedMinuteText, 0);
+                        long s = parseLongOrDefault(killedSecondText, 0);
+                        if (!killedDayText.isEmpty() && d > 366) {
+                            Toast.makeText(this, R.string.edit_time_day_too_large, Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        if (!killedHourText.isEmpty() && h > 24) {
+                            Toast.makeText(this, R.string.edit_time_hour_too_large, Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        if (!killedMinuteText.isEmpty() && m > 60) {
+                            Toast.makeText(this, R.string.edit_time_minute_too_large, Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        if (!killedSecondText.isEmpty() && s > 60) {
+                            Toast.makeText(this, R.string.edit_time_second_too_large, Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                    }
+
+                    // 2.2 校验“下一只刷新时间”
+                    if (hasSpawn) {
+                        long h = parseLongOrDefault(spawnHourText, 0);
+                        long m = parseLongOrDefault(spawnMinuteText, 0);
+                        long s = parseLongOrDefault(spawnSecondText, 0);
+                        if (!spawnHourText.isEmpty() && h > 24) {
+                            Toast.makeText(this, R.string.edit_time_hour_too_large, Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        if (!spawnMinuteText.isEmpty() && m > 60) {
+                            Toast.makeText(this, R.string.edit_time_minute_too_large, Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        if (!spawnSecondText.isEmpty() && s > 60) {
+                            Toast.makeText(this, R.string.edit_time_second_too_large, Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                    }
+
+                    // 3. 应用修改
+                    if (hasKilled) {
+                        // ★ 优先处理“上一只死亡时间”
+                        Calendar killedCalendar = Calendar.getInstance();
+                        if (!killedDayText.isEmpty()) killedCalendar.add(Calendar.DAY_OF_MONTH, -Integer.parseInt(killedDayText));
+                        if (!killedHourText.isEmpty()) killedCalendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(killedHourText));
+                        if (!killedMinuteText.isEmpty()) killedCalendar.set(Calendar.MINUTE, Integer.parseInt(killedMinuteText));
+                        if (!killedSecondText.isEmpty()) killedCalendar.set(Calendar.SECOND, Integer.parseInt(killedSecondText));
+                        data.startTime = killedCalendar.getTimeInMillis();
+                    } else if (hasSpawn) {
+                        // 仅当未填写死亡时间时，才处理“下一只刷新时间”
+                        Calendar spawnCalendar = Calendar.getInstance();
+                        if (!spawnHourText.isEmpty()) spawnCalendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(spawnHourText));
+                        if (!spawnMinuteText.isEmpty()) spawnCalendar.set(Calendar.MINUTE, Integer.parseInt(spawnMinuteText));
+                        if (!spawnSecondText.isEmpty()) spawnCalendar.set(Calendar.SECOND, Integer.parseInt(spawnSecondText));
+                        data.startTime = (spawnCalendar.getTimeInMillis() / 1000 - data.spawnTime) * 1000;
+                    }
+
+                    // 4. 禁用自动重置，防止剩余时间为负时自动重置覆盖“已刷新”
+                    data.isNotified = false;
+                    data.autoReset = false;
+
+                    data.setSpawnTime(this);
+                    long remaining = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
+                    if (remaining < 0) remaining = 0;
+                    if (remaining >= 3600) {
+                        data.text3 = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                                remaining / 3600, (remaining % 3600) / 60, remaining % 60);
+                    } else {
+                        data.text3 = String.format(Locale.getDefault(), "%02d:%02d",
+                                remaining / 60, remaining % 60);
+                    }
+
+                    dbHelper.editBoss(data);
+                    EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, data));
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(this, R.string.edit_time_success, Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton(R.string.dialog_button_cancel, null)
+                .create();
+        dialog.show();
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.9);
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT;
+            window.setAttributes(params);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+    }
+
+    // 辅助方法
+    private long parseLongOrDefault(String str, long defaultValue) {
+        if (str == null || str.isEmpty()) return defaultValue;
+        try {
+            return Long.parseLong(str);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    // ★ 修改剩余时间对话框
+    private void showEditRemainingDialog(ItemAdapter adapter, int position) {
+        RowData data = adapter.dataList.get(position);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_remaining, null);
+        TextView tvBossName = dialogView.findViewById(R.id.tv_boss_name);
+        tvBossName.setText(getString(R.string.boss_name_prefix) + data.text1);
+
+        EditText hourInput = dialogView.findViewById(R.id.edit_spawn_hour);
+        EditText minuteInput = dialogView.findViewById(R.id.edit_spawn_minute);
+        EditText secondInput = dialogView.findViewById(R.id.edit_spawn_second);
+
+        long remaining = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
+        if (remaining < 0) remaining = 0;
+        hourInput.setText(String.valueOf(remaining / 3600));
+        minuteInput.setText(String.valueOf((remaining % 3600) / 60));
+        secondInput.setText(String.valueOf(remaining % 60));
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_title_edit_remaining)
+                .setView(dialogView)
+                .setPositiveButton(R.string.dialog_button_ok, (di, which) -> {
+                    String hourText = hourInput.getText().toString().trim();
+                    String minuteText = minuteInput.getText().toString().trim();
+                    String secondText = secondInput.getText().toString().trim();
+
+                    long newRemaining = 0;
+                    if (!hourText.isEmpty()) newRemaining += Long.parseLong(hourText) * 3600;
+                    if (!minuteText.isEmpty()) newRemaining += Long.parseLong(minuteText) * 60;
+                    if (!secondText.isEmpty()) newRemaining += Long.parseLong(secondText);
+
+                    if (newRemaining > 0) {
+                        data.startTime = System.currentTimeMillis() + newRemaining * 1000 - data.spawnTime * 1000;
+                        data.isNotified = false;
+                        if (newRemaining >= 3600) {
+                            data.text3 = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                                    newRemaining / 3600, (newRemaining % 3600) / 60, newRemaining % 60);
+                        } else {
+                            data.text3 = String.format(Locale.getDefault(), "%02d:%02d",
+                                    newRemaining / 60, newRemaining % 60);
+                        }
+                        data.setSpawnTime(this);
+                        dbHelper.editBoss(data);
+                        EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, data));
+                        adapter.notifyDataSetChanged();
+                    } else {
+                        Toast.makeText(this, R.string.edit_remaining_invalid, Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton(R.string.dialog_button_cancel, null)
+                .create();
+        dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.9);
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT;
+            window.setAttributes(params);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+    }
+
+    // 作者声明对话框（原样保留）
     private void showAuthorDialog() {
         Dialog dialog = new Dialog(this);
         dialog.setContentView(R.layout.dialog_author);
@@ -537,7 +845,7 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // 查看数据库对话框
+    // 数据库查看（原样保留）
     private void showDatabase() {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.database, null);
         ListView databaseListView = dialogView.findViewById(R.id.listViewBosses);
@@ -560,7 +868,7 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
-    // 打赏对话框
+    // 打赏对话框（原样保留）
     private void showDonateDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_donate, null);
@@ -577,7 +885,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // 搜索功能
     private void performSearch(String searchText) {
         if (searchRunnable != null) {
             searchHandler.removeCallbacks(searchRunnable);
@@ -589,7 +896,6 @@ public class MainActivity extends AppCompatActivity {
         searchHandler.postDelayed(searchRunnable, 300);
     }
 
-    // 电池优化提醒
     private void checkAndRequestBatteryOptimization() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
@@ -606,32 +912,6 @@ public class MainActivity extends AppCompatActivity {
                         .setCancelable(false)
                         .show();
             }
-        }
-    }
-
-    // 通知权限引导（保留但未使用，可根据需要调用）
-    private void openNotificationSettings() {
-        try {
-            Intent intent = new Intent();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-                intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
-                intent.putExtra("app_package", getPackageName());
-                intent.putExtra("app_uid", getApplicationInfo().uid);
-            } else {
-                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                intent.addCategory(Intent.CATEGORY_DEFAULT);
-                intent.setData(Uri.parse("package:" + getPackageName()));
-            }
-            startActivity(intent);
-            Toast.makeText(this, R.string.notification_settings_toast, Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            e.printStackTrace();
-            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            intent.setData(Uri.parse("package:" + getPackageName()));
-            startActivity(intent);
         }
     }
 
