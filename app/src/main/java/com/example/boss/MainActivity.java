@@ -623,19 +623,16 @@ public class MainActivity extends AppCompatActivity {
     private void showEditTimeDialog(ItemAdapter adapter, int position) {
         RowData data = adapter.dataList.get(position);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_time, null);
-        TextView tvBossName = dialogView.findViewById(R.id.tv_boss_name);
-        tvBossName.setText(getString(R.string.boss_name_prefix) + data.text1);
 
         EditText killedDay = dialogView.findViewById(R.id.edit_killed_day);
         EditText killedHour = dialogView.findViewById(R.id.edit_killed_hour);
         EditText killedMinute = dialogView.findViewById(R.id.edit_killed_minute);
         EditText killedSecond = dialogView.findViewById(R.id.edit_killed_second);
-        EditText needDay = dialogView.findViewById(R.id.edit_need_day);      // 忽略，不校验
+        EditText needDay = dialogView.findViewById(R.id.edit_need_day);
         EditText needHour = dialogView.findViewById(R.id.edit_need_hour);
         EditText needMinute = dialogView.findViewById(R.id.edit_need_minute);
         EditText needSecond = dialogView.findViewById(R.id.edit_need_second);
 
-        // 左下角显示结束时间
         TextView tvEndTime = dialogView.findViewById(R.id.tv_start_time);
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd   HH:mm:ss", Locale.getDefault());
         long endTimeMillis = data.startTime + data.spawnTime * 1000;
@@ -645,71 +642,49 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle(R.string.dialog_title_edit_time)
                 .setView(dialogView)
                 .setPositiveButton(R.string.dialog_button_ok, (di, which) -> {
-                    // 1. 读取输入
                     String killedDayText = killedDay.getText().toString().trim();
                     String killedHourText = killedHour.getText().toString().trim();
                     String killedMinuteText = killedMinute.getText().toString().trim();
                     String killedSecondText = killedSecond.getText().toString().trim();
+                    String needDayText = needDay.getText().toString().trim();
                     String spawnHourText = needHour.getText().toString().trim();
                     String spawnMinuteText = needMinute.getText().toString().trim();
                     String spawnSecondText = needSecond.getText().toString().trim();
 
                     boolean hasKilled = !killedDayText.isEmpty() || !killedHourText.isEmpty() ||
                             !killedMinuteText.isEmpty() || !killedSecondText.isEmpty();
-                    boolean hasSpawn = !spawnHourText.isEmpty() || !spawnMinuteText.isEmpty() || !spawnSecondText.isEmpty();
+                    boolean hasSpawn = !needDayText.isEmpty() || !spawnHourText.isEmpty() ||
+                            !spawnMinuteText.isEmpty() || !spawnSecondText.isEmpty();
 
                     if (!hasKilled && !hasSpawn) {
                         Toast.makeText(this, R.string.edit_time_no_change, Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    // 2. 校验范围（只校验有输入的字段）
-                    // 2.1 校验“上一只死亡时间”
+                    // 校验范围
                     if (hasKilled) {
                         long d = parseLongOrDefault(killedDayText, 0);
                         long h = parseLongOrDefault(killedHourText, 0);
                         long m = parseLongOrDefault(killedMinuteText, 0);
                         long s = parseLongOrDefault(killedSecondText, 0);
-                        if (!killedDayText.isEmpty() && d > 366) {
-                            Toast.makeText(this, R.string.edit_time_day_too_large, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        if (!killedHourText.isEmpty() && h > 24) {
-                            Toast.makeText(this, R.string.edit_time_hour_too_large, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        if (!killedMinuteText.isEmpty() && m > 60) {
-                            Toast.makeText(this, R.string.edit_time_minute_too_large, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        if (!killedSecondText.isEmpty() && s > 60) {
-                            Toast.makeText(this, R.string.edit_time_second_too_large, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
+                        if (!killedDayText.isEmpty() && d > 366) { Toast.makeText(this, R.string.edit_time_day_too_large, Toast.LENGTH_SHORT).show(); return; }
+                        if (!killedHourText.isEmpty() && h > 24) { Toast.makeText(this, R.string.edit_time_hour_too_large, Toast.LENGTH_SHORT).show(); return; }
+                        if (!killedMinuteText.isEmpty() && m > 60) { Toast.makeText(this, R.string.edit_time_minute_too_large, Toast.LENGTH_SHORT).show(); return; }
+                        if (!killedSecondText.isEmpty() && s > 60) { Toast.makeText(this, R.string.edit_time_second_too_large, Toast.LENGTH_SHORT).show(); return; }
                     }
-
-                    // 2.2 校验“下一只刷新时间”
                     if (hasSpawn) {
+                        long d = parseLongOrDefault(needDayText, 0);
                         long h = parseLongOrDefault(spawnHourText, 0);
                         long m = parseLongOrDefault(spawnMinuteText, 0);
                         long s = parseLongOrDefault(spawnSecondText, 0);
-                        if (!spawnHourText.isEmpty() && h > 24) {
-                            Toast.makeText(this, R.string.edit_time_hour_too_large, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        if (!spawnMinuteText.isEmpty() && m > 60) {
-                            Toast.makeText(this, R.string.edit_time_minute_too_large, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        if (!spawnSecondText.isEmpty() && s > 60) {
-                            Toast.makeText(this, R.string.edit_time_second_too_large, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
+                        if (!needDayText.isEmpty() && d > 366) { Toast.makeText(this, R.string.edit_time_day_too_large, Toast.LENGTH_SHORT).show(); return; }
+                        if (!spawnHourText.isEmpty() && h > 24) { Toast.makeText(this, R.string.edit_time_hour_too_large, Toast.LENGTH_SHORT).show(); return; }
+                        if (!spawnMinuteText.isEmpty() && m > 60) { Toast.makeText(this, R.string.edit_time_minute_too_large, Toast.LENGTH_SHORT).show(); return; }
+                        if (!spawnSecondText.isEmpty() && s > 60) { Toast.makeText(this, R.string.edit_time_second_too_large, Toast.LENGTH_SHORT).show(); return; }
                     }
 
-                    // 3. 应用修改
+                    // 优先死亡时间
                     if (hasKilled) {
-                        // ★ 优先处理“上一只死亡时间”
                         Calendar killedCalendar = Calendar.getInstance();
                         if (!killedDayText.isEmpty()) killedCalendar.add(Calendar.DAY_OF_MONTH, -Integer.parseInt(killedDayText));
                         if (!killedHourText.isEmpty()) killedCalendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(killedHourText));
@@ -717,28 +692,24 @@ public class MainActivity extends AppCompatActivity {
                         if (!killedSecondText.isEmpty()) killedCalendar.set(Calendar.SECOND, Integer.parseInt(killedSecondText));
                         data.startTime = killedCalendar.getTimeInMillis();
                     } else if (hasSpawn) {
-                        // 仅当未填写死亡时间时，才处理“下一只刷新时间”
                         Calendar spawnCalendar = Calendar.getInstance();
+                        if (!needDayText.isEmpty()) {
+                            spawnCalendar.add(Calendar.DAY_OF_MONTH, Integer.parseInt(needDayText));
+                        }
                         if (!spawnHourText.isEmpty()) spawnCalendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(spawnHourText));
                         if (!spawnMinuteText.isEmpty()) spawnCalendar.set(Calendar.MINUTE, Integer.parseInt(spawnMinuteText));
                         if (!spawnSecondText.isEmpty()) spawnCalendar.set(Calendar.SECOND, Integer.parseInt(spawnSecondText));
                         data.startTime = (spawnCalendar.getTimeInMillis() / 1000 - data.spawnTime) * 1000;
                     }
 
-                    // 4. 禁用自动重置，防止剩余时间为负时自动重置覆盖“已刷新”
                     data.isNotified = false;
                     data.autoReset = false;
-
                     data.setSpawnTime(this);
                     long remaining = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
                     if (remaining < 0) remaining = 0;
-                    if (remaining >= 3600) {
-                        data.text3 = String.format(Locale.getDefault(), "%02d:%02d:%02d",
-                                remaining / 3600, (remaining % 3600) / 60, remaining % 60);
-                    } else {
-                        data.text3 = String.format(Locale.getDefault(), "%02d:%02d",
-                                remaining / 60, remaining % 60);
-                    }
+                    data.text3 = (remaining >= 3600) ?
+                            String.format(Locale.getDefault(), "%02d:%02d:%02d", remaining / 3600, (remaining % 3600) / 60, remaining % 60) :
+                            String.format(Locale.getDefault(), "%02d:%02d", remaining / 60, remaining % 60);
 
                     dbHelper.editBoss(data);
                     EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, data));
@@ -748,7 +719,6 @@ public class MainActivity extends AppCompatActivity {
                 .setNegativeButton(R.string.dialog_button_cancel, null)
                 .create();
         dialog.show();
-
         Window window = dialog.getWindow();
         if (window != null) {
             WindowManager.LayoutParams params = window.getAttributes();

@@ -164,20 +164,21 @@
     <!-- 悬浮窗中显示 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="2dp">
+        android:layout_height="56dp"
+        android:layout_marginTop="2dp"
+        android:orientation="horizontal">
+
         <TextView
-            android:layout_width="110dp"
+            android:layout_width="108dp"
             android:layout_height="wrap_content"
             android:text="@string/input_show_in_float_label"
-            android:textSize="16sp"/>
+            android:textSize="16sp" />
 
         <CheckBox
             android:id="@+id/chk_show_in_float"
-            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:checked="true"/>
+            android:layout_height="wrap_content"
+            android:checked="true" />
     </LinearLayout>
 
     <!-- 分割线 -->
