@@ -27,6 +27,8 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.HashMap;
 
 public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAdapter.ViewHolder> {
     private List<RowData> dataList;
@@ -212,6 +214,13 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
         } else {
             holder.text3.setTextColor(context.getResources().getColor(android.R.color.white));
         }
+        // 点击 text2 切换显示格式
+        holder.text2.setOnClickListener(null);   // 移除可能存在的旧监听
+        holder.text2.setOnClickListener(v -> {
+            data.showSeconds = !data.showSeconds;
+            data.setSpawnTime(context);
+            notifyItemChanged(position);
+        });
         // ★ 分割线控制：最后一项隐藏
         View divider = holder.itemView.findViewById(R.id.divider);
         if (position == getItemCount() - 1) {
@@ -227,27 +236,38 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
     }
 
     public void updateData(List<RowData> newData) {
+        // 保存当前 showSeconds 状态
+        Map<Long, Boolean> showSecondsMap = new HashMap<>();
         if (dataList != null) {
-            dataList.clear();
+            for (RowData old : dataList) {
+                showSecondsMap.put(old.id, old.showSeconds);
+            }
         }
 
-        List<RowData> dataList_sorted = new ArrayList<>(newData);
+        // 过滤（只显示 showInFloat == true）
+        List<RowData> filteredList = new ArrayList<>();
+        for (RowData data : newData) {
+            if (data.showInFloat) {
+                filteredList.add(data);
+            }
+        }
 
-        Collections.sort(dataList_sorted, (o1, o2) -> {
+        // 排序
+        Collections.sort(filteredList, (o1, o2) -> {
             long time1 = o1.startTime + o1.spawnTime * 1000;
             long time2 = o2.startTime + o2.spawnTime * 1000;
             return Long.compare(time1, time2);
         });
 
-        List<RowData> dataListShow = new ArrayList<>();
-        for (RowData data : dataList_sorted) {
-            if (data.showInFloat) {
-                data.setSpawnTime(context); // 使用当前上下文更新 text2
-                dataListShow.add(data);
+        // 恢复 showSeconds 并重新生成 text2
+        for (RowData data : filteredList) {
+            if (showSecondsMap.containsKey(data.id)) {
+                data.showSeconds = showSecondsMap.get(data.id);
             }
+            data.setSpawnTime(context); // 应用当前 showSeconds 刷新 text2
         }
-        dataList = dataListShow;
 
+        dataList = filteredList;
         notifyDataSetChanged();
     }
 

@@ -17,6 +17,7 @@ public class RowData {
     public long notifyTime;
     boolean autoReset;
     boolean showInFloat;
+    public boolean showSeconds = false; // 默认不显示秒
 
     public RowData() {
         this.isNotified = false;
@@ -24,7 +25,7 @@ public class RowData {
 
     /**
      * 根据当前时间和开始时间计算显示文本（刷新日期+时间，或“已刷新”）
-     * 如果是今天（相差0天），则不显示日期前缀，只显示时间（HH:mm:ss）
+     * 如果是今天（相差0天），则不显示日期前缀，只显示时间（HH:mm 或 HH:mm:ss）
      * @param context 用于获取资源
      */
     public void setSpawnTime(Context context) {
@@ -37,11 +38,19 @@ public class RowData {
         long elapsedSeconds = this.startTime / 1000 + this.spawnTime - System.currentTimeMillis() / 1000;
 
         if (elapsedSeconds > 0) {
-            // 构建刷新时间字符串 HH:mm:ss
-            String timeString = String.format(Locale.getDefault(), "%02d:%02d",
-                    respawnCalendar.get(Calendar.HOUR_OF_DAY),
-                    respawnCalendar.get(Calendar.MINUTE),
-                    respawnCalendar.get(Calendar.SECOND));
+            // 构建刷新时间字符串，根据 showSeconds 决定是否显示秒
+            String timeString;
+            if (showSeconds) {
+                timeString = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                        respawnCalendar.get(Calendar.HOUR_OF_DAY),
+                        respawnCalendar.get(Calendar.MINUTE),
+                        respawnCalendar.get(Calendar.SECOND));
+            } else {
+                timeString = String.format(Locale.getDefault(), "%02d:%02d",
+                        respawnCalendar.get(Calendar.HOUR_OF_DAY),
+                        respawnCalendar.get(Calendar.MINUTE));
+
+            }
 
             // 计算相差天数，用于前缀
             respawnCalendar.set(Calendar.HOUR_OF_DAY, 0);
@@ -89,7 +98,7 @@ public class RowData {
 
         Calendar currentCalendar = Calendar.getInstance();
         currentCalendar.setTimeInMillis(currentTime);
-         //剩余时间字符串  HH:mm:ss
+        //剩余时间字符串  HH:mm:ss
         String startTimeText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
                 startCalendar.get(Calendar.HOUR_OF_DAY),
                 startCalendar.get(Calendar.MINUTE),

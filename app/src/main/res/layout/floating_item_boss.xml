@@ -38,8 +38,8 @@
             android:ellipsize="marquee"
             android:marqueeRepeatLimit="marquee_forever"
             android:singleLine="true"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
             android:scrollHorizontally="true" />
 
         <TextView
@@ -76,6 +76,6 @@
         android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#10FFFFFF" />   <!-- 半透明白色，适应黑色背景 -->
+        android:background="#20FFFFFF" />   <!-- 半透明白色，适应黑色背景 -->
 
 </LinearLayout>
