@@ -13,7 +13,6 @@
     <string name="button_toggle_float_off">关闭悬浮窗</string>
     <string name="button_add_row">添加新行</string>
     <string name="button_donate">打赏</string>
-    <string name="button_view_database">查看数据库</string>
     <string name="author_text">作者：悉尼巧克力/Uum</string>
     <string name="contact_text">有问题请联系qq：1781391759/810026494</string>
 
@@ -22,6 +21,11 @@
     <string name="float_title_remaining">剩余</string>
     <string name="float_title_reset">重置</string>
     <string name="float_button_minimize">最小化</string>
+    <string name="float_button_share">共享</string>
+    <string name="float_button_local">本地</string>
+    <string name="float_button_room">房间</string>
+    <string name="float_room_bar">%s · 房间 %s</string>
+    <string name="favorite">收藏</string>
     <string name="refreshed">已刷新</string>
     <string name="input_name_label">名称:</string>
     <string name="input_reset_time_label">重置时间:</string>
@@ -54,7 +58,7 @@
     <string name="dialog_button_cancel">取消</string>
 
     <string name="author_dialog_title">作者声明</string>
-    <string name="author_statement">本应用用于Boss计时，数据仅保存在本地，不会上传。</string>
+    <string name="author_statement">本应用用于Boss计时，本地模式数据仅保存在本地。共享模式下数据通过云端同步。</string>
 
     <string name="donate_title">感谢支持</string>
     <string name="donate_subtitle">扫码打赏</string>
@@ -118,10 +122,6 @@
 
     <string name="timer_service_channel_description">Boss刷新提醒通道</string>
 
-    <!-- 悬浮窗共享模式 -->
-    <string name="float_share_mode_local">本地</string>
-    <string name="float_share_mode_shared">共享</string>
-
     <string name="dialog_title_edit_time">修改刷新时间</string>
     <string name="dialog_title_edit_remaining">修改剩余时间</string>
     <string name="edit_remaining_invalid">请输入有效的剩余时间</string>
@@ -146,4 +146,50 @@
     <string name="language_chinese">中文</string>
     <string name="language_english">English</string>
     <string name="language_korean">한국어</string>
+
+    <string name="room_button">共享</string>
+    <string name="room_dialog_title">房间</string>
+    <string name="room_leave">离开房间</string>
+    <string name="room_left">已离开房间</string>
+    <string name="room_sync_now">立即同步</string>
+    <string name="room_create">创建</string>
+    <string name="room_join">加入</string>
+    <string name="room_name_empty">请输入房间名称</string>
+    <string name="room_id_empty">请输入房间ID</string>
+    <string name="room_error">操作失败: %s</string>
+    <string name="room_name_hint_create">输入房间名称</string>
+    <string name="create_user_name_hint">输入你的ID</string>
+
+    <string name="shared_header">共享房间 [%s] · %s</string>
+    <string name="role_owner">房主</string>
+    <string name="role_admin">管理员</string>
+    <string name="role_member">成员</string>
+
+    <string name="join_room_title">加入共享房间</string>
+    <string name="join_room_id_hint">输入3位房间号</string>
+    <string name="join_room_name_hint">输入你的名称</string>
+    <string name="join_room_btn">加入</string>
+    <string name="room_password_hint">房间密码（无密码则留空）</string>
+    <string name="room_password_wrong">密码错误或房间需要密码</string>
+    <string name="room_not_found">没有找到房间</string>
+
+    <string name="room_has_password"> [有密码]</string>
+    <string name="room_pwd_keep">留空保持原密码</string>
+    <string name="room_pwd_set">设置新密码</string>
+    <string name="room_info_prefix">房间 </string>
+    <string name="room_version_label">版本: </string>
+    <string name="room_password_label">密码: </string>
+    <string name="room_no_password">无密码</string>
+    <string name="mode_local">本地模式</string>
+
+    <string name="my_rooms_button">我创建的房间</string>
+    <string name="my_rooms_title">我的房间</string>
+    <string name="my_rooms_empty">你还没有创建过房间</string>
+    <string name="manage_room_title">管理房间 %s</string>
+    <string name="manage_room_save">保存修改</string>
+    <string name="manage_room_delete">删除房间</string>
+    <string name="manage_room_delete_confirm">确认删除</string>
+    <string name="manage_room_delete_msg">确定要删除房间 %s 吗？所有Boss数据将被清除。</string>
+    <string name="manage_room_members_title">成员管理</string>
+    <string name="edit_member_title">修改 %s 的角色</string>
 </resources>

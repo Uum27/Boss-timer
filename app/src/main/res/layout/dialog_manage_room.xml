@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/manage_room_name"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="@string/room_name_hint_create"
+        android:inputType="text"
+        android:maxLength="10"
+        android:textSize="16sp" />
+
+    <EditText
+        android:id="@+id/manage_room_password"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:hint="留空不变更"
+        android:inputType="textPassword"
+        android:maxLength="20"
+        android:textSize="16sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <Button
+            android:id="@+id/manage_room_save"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="48dp"
+            android:text="@string/manage_room_save"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/manage_room_members"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="48dp"
+            android:text="@string/manage_room_members_title"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/manage_room_delete"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="4dp"
+        android:text="@string/manage_room_delete"
+        android:textColor="#FF4444"
+        android:textSize="14sp" />
+
+</LinearLayout>

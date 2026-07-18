@@ -20,33 +20,28 @@ android {
 
     buildTypes {
         release {
-
-            // 加固
-            // 启用代码压缩和混淆
-            // 启用代码压缩和混淆
+            // 正式版：启用混淆、压缩、对齐
             isMinifyEnabled = true
             isShrinkResources = true
-
-            // 混淆规则文件
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-
-            // 启用 ZipAlign 优化
             isZipAlignEnabled = true
-
-            // 签名配置
-//            signingConfig = signingConfigs.getByName("release")
-            //
-
-// origin            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // 签名配置（如果你有 release 签名，取消下面注释并配置 signingConfigs）
+            // signingConfig = signingConfigs.getByName("release")
+        }
+
+        // 👇 新增测试版（debug）配置
+        debug {
+            // 包名加后缀 .test，与正式版区分，可同时安装
+            applicationIdSuffix = ".test"
+            // 调试版不混淆，加快构建
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -62,11 +57,7 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     implementation("org.greenrobot:eventbus:3.3.1")
-
-    // 混淆工具
-//    implementation("com.github.shadowsocks:plugin:0.1.0")
     implementation("androidx.preference:preference:1.2.0")
-    // 加密库
-    implementation ("com.github.bumptech.glide:glide:4.12.0")
-    annotationProcessor ("com.github.bumptech.glide:compiler:4.12.0")
+    implementation("com.github.bumptech.glide:glide:4.12.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
 }

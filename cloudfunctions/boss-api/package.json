@@ -1,0 +1,9 @@
+{
+  "name": "boss-api",
+  "version": "1.0.0",
+  "description": "Boss Timer API - Tencent CloudBase Cloud Function",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/node-sdk": "^2.5.0"
+  }
+}

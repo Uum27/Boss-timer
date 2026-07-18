@@ -38,6 +38,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
     private static final int NOTIFICATION_ID = 1;
     private Context context; // 这个 context 需要可更新
     private DBHelper dbHelper;
+    private DataManager dataManager;
     private ItemAdapter.OnButtonClickListener buttonClickListener;
     private RecyclerView recyclerView;
     private boolean hadRefreshedDay;
@@ -61,6 +62,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
 
         this.dataList = dataList;
         dbHelper = new DBHelper(context);
+        dataManager = DataManager.getInstance(context);
         handler = new Handler(Looper.getMainLooper());
         hadRefreshedDay = false;
     }
@@ -68,11 +70,8 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
     // 新增：更新 Context 的方法
     public void updateContext(Context newContext) {
         this.context = newContext;
-        // 同时更新 dbHelper 的 context（因为 dbHelper 在 getAllBosses 中调用 data.setSpawnTime(context)）
-        // 但 dbHelper 是 final 的，需要重新创建，或者我们可以在 updateData 中重新传入 context
-        // 简单处理：重新创建 dbHelper
         this.dbHelper = new DBHelper(newContext);
-        // 通知渠道可能也需要更新，但通知渠道名称不变，可以不更新
+        this.dataManager = DataManager.getInstance(newContext);
     }
 
     public void setRecyclerView(RecyclerView recyclerView) {
@@ -132,7 +131,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
 
                             notificationManager.notify(NOTIFICATION_ID, builder.build());
                             data.isNotified = true;
-                            dbHelper.setIsNotified(data.id, true);
+                            dataManager.setIsNotified(data.id, true);
                         }
                     } else if (data.autoReset && data.spawnTime > 0) {
                         long currentTime = System.currentTimeMillis();
@@ -142,7 +141,11 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
                         }
                         data.setSpawnTime(context); // 使用当前上下文
                         data.isNotified = false;
-                        dbHelper.resetBossStartTime(data.id, data.startTime);
+                        if (data.docId != null && data.roomId != null) {
+                            dataManager.resetBossShared(data.id, data.startTime);
+                        } else {
+                            dataManager.resetBossStartTime(data.id, data.startTime);
+                        }
                         EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.RESET_ITEM, i));
                         notifyItemChanged(i);
                     } else {
@@ -207,6 +210,12 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
                 buttonClickListener.onButtonClick(position, ItemAdapter.ButtonType.RESET);
             }
         });
+
+        if (dataManager.isShowingSharedData()) {
+            holder.btnReset.setVisibility(dataManager.canReset() ? View.VISIBLE : View.GONE);
+        } else {
+            holder.btnReset.setVisibility(View.VISIBLE);
+        }
 
         long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
         if (elapsedSeconds < data.notifyTime) {
@@ -277,8 +286,12 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
             data.startTime = System.currentTimeMillis();
             data.setSpawnTime(context);
             data.isNotified = false;
-            dbHelper.setIsNotified(data.id, false);
-            dbHelper.resetBossStartTime(data.id, data.startTime);
+            dataManager.setIsNotified(data.id, false);
+            if (dataManager.isShowingSharedData() && data.docId != null) {
+                dataManager.resetBossShared(data.id, data.startTime);
+            } else {
+                dataManager.resetBossStartTime(data.id, data.startTime);
+            }
             notifyItemChanged(position);
         }
         EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.RESET_ITEM, position));

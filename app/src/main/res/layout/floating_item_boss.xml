@@ -4,7 +4,6 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <!-- 原来的水平内容行 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="32dp"
@@ -66,16 +65,14 @@
             android:background="@android:color/transparent"
             android:src="@drawable/reset_white"
             android:scaleType="centerInside"
-            android:contentDescription="重置按钮"
             android:minHeight="32dp" />
 
     </LinearLayout>
 
-    <!-- ★ 分割线 -->
     <View
         android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#20FFFFFF" />   <!-- 半透明白色，适应黑色背景 -->
+        android:background="#20FFFFFF" />
 
 </LinearLayout>

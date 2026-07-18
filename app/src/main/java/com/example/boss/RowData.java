@@ -18,6 +18,10 @@ public class RowData {
     boolean autoReset;
     boolean showInFloat;
     public boolean showSeconds = false; // 默认不显示秒
+    public String docId;
+    public String roomId;
+    public long updateTime;
+    public String syncStatus = "synced";
 
     public RowData() {
         this.isNotified = false;

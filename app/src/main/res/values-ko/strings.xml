@@ -21,13 +21,18 @@
     <string name="float_title_refresh">갱신시간</string>
     <string name="float_title_remaining">잔여</string>
     <string name="float_title_reset">리셋</string>
-    <string name="float_button_minimize">최소화</string>
+    <string name="float_button_minimize">최소</string>
+    <string name="float_button_share">공유</string>
+    <string name="float_button_local">로컬</string>
+    <string name="float_button_room">방</string>
+    <string name="float_room_bar">%s · 방 %s</string>
+    <string name="favorite">즐찾</string>
     <string name="refreshed">갱신됨</string>
 
     <string name="input_name_label">이름:</string>
     <string name="input_reset_time_label">리셋 시간:</string>
     <string name="input_auto_reset_label">자동 리셋:</string>
-    <string name="input_advance_notify_label">사전 알림 시간:</string>
+    <string name="input_advance_notify_label">사전 알림:</string>
     <string name="input_show_in_float_label">부동창 표시:</string>
     <string name="input_extra_label">비고:</string>
     <string name="input_hour_hint">시</string>
@@ -35,18 +40,18 @@
     <string name="input_second_hint">초</string>
 
     <string name="edit_name_label">이름:</string>
-    <string name="edit_killed_time_label">사망 시간:\n(우선 순위는 위에서 아래로)</string>
+    <string name="edit_killed_time_label">사망 시간:\n(우선순위 위→아래)</string>
     <string name="edit_next_spawn_label">다음 리스폰:</string>
     <string name="edit_remaining_label">남은 시간:</string>
     <string name="edit_auto_reset_label">자동 리셋:</string>
-    <string name="edit_notify_ahead_label">사전 알림 시간:</string>
+    <string name="edit_notify_ahead_label">사전 알림:</string>
     <string name="edit_show_in_float_label">부동창 표시:</string>
     <string name="edit_extra_label">비고:</string>
-    <string name="edit_current_info_label">현재 정보：</string>
-    <string name="edit_killed_days_hint">며칠\n전</string>
-    <string name="edit_next_days_hint">며칠\n후</string>
+    <string name="edit_current_info_label">현재 정보:</string>
     <string name="edit_extra_hint">추가 정보</string>
     <string name="edit_current_info_hint">현재 정보</string>
+    <string name="edit_killed_days_hint">며칠 전</string>
+    <string name="edit_next_days_hint">며칠 후</string>
 
     <string name="dialog_title_add">항목 추가</string>
     <string name="dialog_title_edit">정보 수정</string>
@@ -55,14 +60,14 @@
     <string name="dialog_button_cancel">취소</string>
 
     <string name="author_dialog_title">저자 성명</string>
-    <string name="author_statement">이 앱은 Boss 타이머용입니.</string>
+    <string name="author_statement">Boss 타이머. 로컬 모드: 로컬 저장. 공유 모드: 클라우드 동기화.</string>
 
-    <string name="donate_title">후원 감사합니다</string>
+    <string name="donate_title">후원 감사</string>
     <string name="donate_subtitle">QR 코드로 후원</string>
     <string name="donate_close">닫기</string>
 
-    <string name="notification_title">Boss가 곧 생성됩니다</string>
-    <string name="notification_content">%s이(가) %d시간 %d분 %d초 후에 생성됩니다</string>
+    <string name="notification_title">Boss 곧 생성</string>
+    <string name="notification_content">%s이(가) %d시 %d분 %d초 후 생성</string>
 
     <string-array name="day_labels">
         <item>오늘</item>
@@ -77,7 +82,7 @@
     <string-array name="start_day_labels">
         <item>오늘</item>
         <item>어제</item>
-        <item>그저께</item>
+        <item>2일전</item>
         <item>3일전</item>
         <item>4일전</item>
         <item>5일전</item>
@@ -91,8 +96,8 @@
     <string name="floating_service_notification_title">부동창 서비스</string>
     <string name="floating_service_notification_text">부동창 서비스 실행 중</string>
 
-    <string name="battery_opt_title">배터리 최적화 알림</string>
-    <string name="battery_opt_message">정상 작동을 위해 배터리 최적화를 제한 없음으로 설정하세요.\n경로: 설정 -> 배터리 -> 배터리 최적화 -> 이 앱 찾기 -> 제한 없음</string>
+    <string name="battery_opt_title">배터리 최적화</string>
+    <string name="battery_opt_message">배터리 최적화를 제한 없음으로 설정하세요.\n설정 -> 배터리 -> 배터리 최적화 -> 앱 찾기 -> 제한 없음</string>
     <string name="battery_opt_positive">설정으로 이동</string>
     <string name="battery_opt_negative">나중에</string>
 
@@ -102,37 +107,31 @@
     <string name="yes">예</string>
     <string name="no">아니오</string>
 
-    <string name="edit_current_info_format">이름：%s\n리셋 시간：%d시%d분%d초\n자동 리셋：%s\n시작 시간：%s\n알림 여부：%s\n사전 알림 시간：%d시%d분%d초\n부동창 표시：%s\n비고：%s</string>
+    <string name="edit_current_info_format">이름:%s\n리셋:%d시 %d분 %d초\n자동리셋:%s\n시작시간:%s\n알림:%s\n사전알림:%d시 %d분 %d초\n부동창:%s\n비고:%s</string>
 
-    <string name="notification_permission_title">잠금 화면 표시 권한 필요</string>
-    <string name="notification_permission_message">잠금 화면에서 알림을 표시하도록 설정에서 허용해 주세요. 그래야 잠금 화면에서 Boss 갱신 진동 알림이 작동합니다</string>
+    <string name="notification_permission_title">잠금 화면 권한 필요</string>
+    <string name="notification_permission_message">잠금 화면 알림을 허용하세요</string>
     <string name="go_to_settings">설정으로 이동</string>
-    <string name="notification_settings_toast">설정에서 잠금 화면 알림 표시를 허용해 주세요</string>
+    <string name="notification_settings_toast">설정에서 잠금 화면 알림 허용</string>
 
     <string name="notification_channel_name">Boss 타이머</string>
     <string name="notification_channel_description">Boss 갱신 알림</string>
-    <string name="timer_service_channel_description">Boss 갱신 알림 채널</string>
+    <string name="timer_service_channel_description">Boss 갱신 채널</string>
 
-    <!-- 부동창 공유 모드 -->
-    <string name="float_share_mode_local">로컬</string>
-    <string name="float_share_mode_shared">공유</string>
-
-    <string name="dialog_title_edit_time">리프레시 시간 수정</string>
+    <string name="dialog_title_edit_time">갱신 시간 수정</string>
     <string name="dialog_title_edit_remaining">남은 시간 수정</string>
-    <string name="edit_remaining_invalid">유효한 남은 시간을 입력하세요.</string>
+    <string name="edit_remaining_invalid">유효한 남은 시간 입력</string>
     <string name="start_time_label">시작 시간:</string>
-
-
     <string name="end_time_label">종료 시간:</string>
-    <string name="edit_time_no_change">변경 사항이 없습니다. 하나 이상 입력하세요.</string>
-    <string name="edit_time_success">수정 완료</string>
-    <string name="edit_time_day_too_large">일 수는 366을 초과할 수 없습니다.</string>
-    <string name="edit_time_hour_too_large">시간은 24를 초과할 수 없습니다.</string>
-    <string name="edit_time_minute_too_large">분은 60을 초과할 수 없습니다.</string>
-    <string name="edit_time_second_too_large">초는 60을 초과할 수 없습니다.</string>
+    <string name="edit_time_no_change">변경 사항 없음</string>
+    <string name="edit_time_success">저장됨</string>
+    <string name="edit_time_day_too_large">일 수 366 초과 불가</string>
+    <string name="edit_time_hour_too_large">시간 24 초과 불가</string>
+    <string name="edit_time_minute_too_large">분 60 초과 불가</string>
+    <string name="edit_time_second_too_large">초 60 초과 불가</string>
 
     <string name="dialog_title_edit_name">이름 및 리셋 시간 수정</string>
-    <string name="edit_name_success">이름과 리셋 시간이 수정되었습니다</string>
+    <string name="edit_name_success">수정됨</string>
     <string name="input_name_hint">Boss 이름 입력</string>
 
     <string name="boss_name_prefix">Boss 이름: </string>
@@ -142,4 +141,50 @@
     <string name="language_chinese">中文</string>
     <string name="language_english">English</string>
     <string name="language_korean">한국어</string>
+
+    <string name="room_button">공유</string>
+    <string name="room_dialog_title">방</string>
+    <string name="room_leave">방 나가기</string>
+    <string name="room_left">방 나감</string>
+    <string name="room_sync_now">동기화</string>
+    <string name="room_create">생성</string>
+    <string name="room_join">참가</string>
+    <string name="room_name_empty">방 이름 입력</string>
+    <string name="room_id_empty">방 ID 입력</string>
+    <string name="room_error">실패: %s</string>
+    <string name="room_name_hint_create">방 이름 입력</string>
+    <string name="create_user_name_hint">ID 입력</string>
+
+    <string name="shared_header">방 [%s] · %s</string>
+    <string name="role_owner">방장</string>
+    <string name="role_admin">관리자</string>
+    <string name="role_member">멤버</string>
+
+    <string name="join_room_title">방 참가</string>
+    <string name="join_room_id_hint">3자리 방 번호</string>
+    <string name="join_room_name_hint">이름 입력</string>
+    <string name="join_room_btn">참가</string>
+    <string name="room_password_hint">비밀번호 (없으면 빈칸)</string>
+    <string name="room_password_wrong">비밀번호 오류</string>
+    <string name="room_not_found">방 없음</string>
+
+    <string name="room_has_password"> [비밀번호]</string>
+    <string name="room_pwd_keep">빈칸 유지</string>
+    <string name="room_pwd_set">새 비밀번호</string>
+    <string name="room_info_prefix">방 </string>
+    <string name="room_version_label">버전: </string>
+    <string name="room_password_label">비번: </string>
+    <string name="room_no_password">비번 없음</string>
+    <string name="mode_local">로컬 모드</string>
+
+    <string name="my_rooms_button">내 방</string>
+    <string name="my_rooms_title">내 방</string>
+    <string name="my_rooms_empty">생성한 방 없음</string>
+    <string name="manage_room_title">방 관리 %s</string>
+    <string name="manage_room_save">저장</string>
+    <string name="manage_room_delete">방 삭제</string>
+    <string name="manage_room_delete_confirm">확인</string>
+    <string name="manage_room_delete_msg">방 %s 삭제? 모든 데이터 삭제됨.</string>
+    <string name="manage_room_members_title">멤버</string>
+    <string name="edit_member_title">%s 역할 변경</string>
 </resources>

@@ -13,7 +13,6 @@
     <string name="button_toggle_float_off">Disable Float</string>
     <string name="button_add_row">Add Row</string>
     <string name="button_donate">Donate</string>
-    <string name="button_view_database">View Database</string>
     <string name="author_text">Author: 悉尼巧克力/Uum</string>
     <string name="contact_text">Contact QQ: 1781391759/810026494</string>
 
@@ -21,7 +20,12 @@
     <string name="float_title_refresh">Ref.Time</string>
     <string name="float_title_remaining">Rem</string>
     <string name="float_title_reset">Reset</string>
-    <string name="float_button_minimize">Minimize</string>
+    <string name="float_button_minimize">Min</string>
+    <string name="float_button_share">Share</string>
+    <string name="float_button_local">Local</string>
+    <string name="float_button_room">Room</string>
+    <string name="float_room_bar">%s · Room %s</string>
+    <string name="favorite">Fav</string>
     <string name="refreshed">Spawned</string>
 
     <string name="input_name_label">Name:</string>
@@ -35,18 +39,18 @@
     <string name="input_second_hint">Sec</string>
 
     <string name="edit_name_label">Name:</string>
-    <string name="edit_killed_time_label">killed time:\n(priority top to bottom)</string>
-    <string name="edit_next_spawn_label">Next spawn time:</string>
-    <string name="edit_remaining_label">Remaining time:</string>
+    <string name="edit_killed_time_label">Killed time:\n(priority top to bottom)</string>
+    <string name="edit_next_spawn_label">Next spawn:</string>
+    <string name="edit_remaining_label">Remaining:</string>
     <string name="edit_auto_reset_label">Auto Reset:</string>
     <string name="edit_notify_ahead_label">Notify ahead:</string>
     <string name="edit_show_in_float_label">Show in Float:</string>
     <string name="edit_extra_label">Extra:</string>
     <string name="edit_current_info_label">Current Info:</string>
-    <string name="edit_killed_days_hint">Days\nago</string>
-    <string name="edit_next_days_hint">Days\nlater</string>
     <string name="edit_extra_hint">Extra Info</string>
     <string name="edit_current_info_hint">Current Info</string>
+    <string name="edit_killed_days_hint">Days ago</string>
+    <string name="edit_next_days_hint">Days later</string>
 
     <string name="dialog_title_add">Add New Item</string>
     <string name="dialog_title_edit">Edit Information</string>
@@ -55,14 +59,14 @@
     <string name="dialog_button_cancel">Cancel</string>
 
     <string name="author_dialog_title">Author Statement</string>
-    <string name="author_statement">This application is for boss timer. </string>
+    <string name="author_statement">Boss Timer app. Local mode: data stored locally. Shared mode: synced via cloud.</string>
 
     <string name="donate_title">Thank you for support</string>
     <string name="donate_subtitle">Scan to donate</string>
     <string name="donate_close">Close</string>
 
     <string name="notification_title">Boss will spawn soon</string>
-    <string name="notification_content">%s will spawn in %d hours %d minutes %d seconds</string>
+    <string name="notification_content">%s will spawn in %dh %dm %ds</string>
 
     <string-array name="day_labels">
         <item>Today</item>
@@ -88,11 +92,11 @@
     <string name="timer_service_notification_title">Boss Timer</string>
     <string name="timer_service_notification_text">Running</string>
 
-    <string name="floating_service_notification_title">Floating Window Service</string>
-    <string name="floating_service_notification_text">Floating window service is running</string>
+    <string name="floating_service_notification_title">Floating Window</string>
+    <string name="floating_service_notification_text">Floating window service running</string>
 
     <string name="battery_opt_title">Battery Optimization</string>
-    <string name="battery_opt_message">For proper functioning, set battery optimization to unrestricted.\nPath: Settings -> Battery -> Battery Optimization -> Find this app -> Unrestricted</string>
+    <string name="battery_opt_message">Set battery optimization to unrestricted.\nSettings -> Battery -> Battery Optimization -> Find app -> Unrestricted</string>
     <string name="battery_opt_positive">Go to settings</string>
     <string name="battery_opt_negative">Later</string>
 
@@ -102,36 +106,31 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
 
-    <string name="edit_current_info_format">Name：%s\nReset Time：%dh %dm %ds\nAuto Reset：%s\nStart Time：%s\nNotify：%s\nNotify Ahead：%dh %dm %ds\nShow in Float：%s\nExtra：%s</string>
+    <string name="edit_current_info_format">Name:%s\nReset:%dh %dm %ds\nAuto Reset:%s\nStart Time:%s\nNotify:%s\nNotify Ahead:%dh %dm %ds\nShow in Float:%s\nExtra:%s</string>
 
-    <string name="notification_permission_title">Lock Screen Display Permission Required</string>
-    <string name="notification_permission_message">Please allow notification display on lock screen in settings, so that boss refresh vibration alert works when screen is locked</string>
+    <string name="notification_permission_title">Lock Screen Permission</string>
+    <string name="notification_permission_message">Allow notification on lock screen for boss alerts</string>
     <string name="go_to_settings">Go to Settings</string>
-    <string name="notification_settings_toast">Please allow notification display on lock screen in settings</string>
+    <string name="notification_settings_toast">Allow lock screen notifications in settings</string>
 
     <string name="notification_channel_name">Boss Timer</string>
     <string name="notification_channel_description">Boss refresh reminder</string>
-    <string name="timer_service_channel_description">Boss refresh reminder channel</string>
-
-    <!-- Floating window share mode -->
-    <string name="float_share_mode_local">Local</string>
-    <string name="float_share_mode_shared">Shared</string>
-    <string name="start_time_label">Start Time:</string>
+    <string name="timer_service_channel_description">Boss refresh channel</string>
 
     <string name="dialog_title_edit_time">Edit Refresh Time</string>
     <string name="dialog_title_edit_remaining">Edit Remaining Time</string>
-    <string name="edit_remaining_invalid">Please enter a valid remaining time</string>
-
+    <string name="edit_remaining_invalid">Enter valid remaining time</string>
+    <string name="start_time_label">Start Time:</string>
     <string name="end_time_label">End Time:</string>
-    <string name="edit_time_no_change">No changes made, please enter at least one item</string>
-    <string name="edit_time_success">Modification successful</string>
+    <string name="edit_time_no_change">No changes made</string>
+    <string name="edit_time_success">Saved</string>
     <string name="edit_time_day_too_large">Days cannot exceed 366</string>
     <string name="edit_time_hour_too_large">Hours cannot exceed 24</string>
     <string name="edit_time_minute_too_large">Minutes cannot exceed 60</string>
     <string name="edit_time_second_too_large">Seconds cannot exceed 60</string>
 
     <string name="dialog_title_edit_name">Edit Name &amp; Reset Time</string>
-    <string name="edit_name_success">Name and reset time updated</string>
+    <string name="edit_name_success">Updated</string>
     <string name="input_name_hint">Enter Boss name</string>
 
     <string name="boss_name_prefix">Boss Name: </string>
@@ -141,4 +140,50 @@
     <string name="language_chinese">中文</string>
     <string name="language_english">English</string>
     <string name="language_korean">한국어</string>
+
+    <string name="room_button">Share</string>
+    <string name="room_dialog_title">Room</string>
+    <string name="room_leave">Leave Room</string>
+    <string name="room_left">Left room</string>
+    <string name="room_sync_now">Sync Now</string>
+    <string name="room_create">Create</string>
+    <string name="room_join">Join</string>
+    <string name="room_name_empty">Enter room name</string>
+    <string name="room_id_empty">Enter room ID</string>
+    <string name="room_error">Failed: %s</string>
+    <string name="room_name_hint_create">Enter room name</string>
+    <string name="create_user_name_hint">Enter your ID</string>
+
+    <string name="shared_header">Room [%s] · %s</string>
+    <string name="role_owner">Owner</string>
+    <string name="role_admin">Admin</string>
+    <string name="role_member">Member</string>
+
+    <string name="join_room_title">Join Room</string>
+    <string name="join_room_id_hint">Enter 3-digit room ID</string>
+    <string name="join_room_name_hint">Enter your name</string>
+    <string name="join_room_btn">Join</string>
+    <string name="room_password_hint">Password (empty if none)</string>
+    <string name="room_password_wrong">Wrong password</string>
+    <string name="room_not_found">Room not found</string>
+
+    <string name="room_has_password"> [password]</string>
+    <string name="room_pwd_keep">Leave empty to keep</string>
+    <string name="room_pwd_set">Set new password</string>
+    <string name="room_info_prefix">Room </string>
+    <string name="room_version_label">Ver: </string>
+    <string name="room_password_label">Pwd: </string>
+    <string name="room_no_password">No password</string>
+    <string name="mode_local">Local Mode</string>
+
+    <string name="my_rooms_button">My Rooms</string>
+    <string name="my_rooms_title">My Rooms</string>
+    <string name="my_rooms_empty">No rooms created</string>
+    <string name="manage_room_title">Manage Room %s</string>
+    <string name="manage_room_save">Save</string>
+    <string name="manage_room_delete">Delete Room</string>
+    <string name="manage_room_delete_confirm">Confirm</string>
+    <string name="manage_room_delete_msg">Delete room %s? All data will be removed.</string>
+    <string name="manage_room_members_title">Members</string>
+    <string name="edit_member_title">Change role of %s</string>
 </resources>

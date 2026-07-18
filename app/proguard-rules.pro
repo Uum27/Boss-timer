@@ -34,15 +34,33 @@
 
 -dontwarn javax.lang.model.element.Modifier
 # ==================== 代码保护 ====================
-# 移除日志
--assumenosideeffects class android.util.Log {
-    public static boolean isLoggable(java.lang.String, int);
-    public static int v(...);
-    public static int i(...);
-    public static int w(...);
-    public static int d(...);
-    public static int e(...);
+# 不移除日志（调试阶段可保留）
+# -assumenosideeffects class android.util.Log {
+#     public static boolean isLoggable(java.lang.String, int);
+#     public static int v(...);
+#     public static int i(...);
+#     public static int w(...);
+#     public static int d(...);
+#     public static int e(...);
+# }
+
+# EventBus
+-keepattributes *Annotation*
+-keepclassmembers class * {
+    @org.greenrobot.eventbus.Subscribe <methods>;
 }
+-keep enum org.greenrobot.eventbus.ThreadMode { *; }
+-keep class com.example.boss.DataChangedEvent { *; }
+-keep class com.example.boss.DataManager { *; }
+-keep class com.example.boss.CloudHelper { *; }
+
+# DataManager
+-keep class com.example.boss.DataManager$Callback { *; }
+-keep class com.example.boss.RowData { *; }
+-keep class com.example.boss.UpdateFloatWindowEvent { *; }
+-keep class com.example.boss.BossNotificationEvent { *; }
+-keep class com.example.boss.LanguageChangeEvent { *; }
+-keep class com.example.boss.EventTypes { *; }
 
 # 保护代码不被反射
 -keepattributes Signature

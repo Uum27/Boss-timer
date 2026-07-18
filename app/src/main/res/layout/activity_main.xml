@@ -47,6 +47,18 @@
             android:layout_gravity="center_vertical"/>
     </LinearLayout>
 
+    <!-- 共享模式Header -->
+    <TextView
+        android:id="@+id/shared_mode_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="4dp"
+        android:textSize="14sp"
+        android:textColor="#FFFFFF"
+        android:background="#3F51B5"
+        android:visibility="gone" />
+
     <!-- 表头（添加背景色和竖线，保留原有高度属性） -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -202,6 +214,50 @@
             android:text="@string/button_donate"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
+    </LinearLayout>
+
+    <!-- 底部按钮行2 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btn_leave_room"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="@string/room_leave"
+            android:textSize="13sp"
+            android:minWidth="0dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btn_room"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="@string/room_button"
+            android:textSize="13sp"
+            android:minWidth="0dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp" />
+
+        <Button
+            android:id="@+id/btn_my_rooms"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="@string/my_rooms_button"
+            android:textSize="13sp"
+            android:minWidth="0dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp" />
     </LinearLayout>
 
     <!-- 底部版权信息 -->

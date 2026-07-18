@@ -30,6 +30,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     public List<RowData> dataList = new ArrayList<>();
     private OnRowClickListener listener;
     private DBHelper dbHelper;
+    private DataManager dataManager;
     private Handler handler;
     private SimpleDateFormat timeFormat;
     private OnButtonClickListener buttonClickListener;
@@ -46,6 +47,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         isServerRunning = false;
         dbHelper = new DBHelper(context);
+        dataManager = DataManager.getInstance(context);
         timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
         handler = new Handler(Looper.getMainLooper());
         hadRefreshedDay = false;
@@ -63,6 +65,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     public void onEventReceived(UpdateFloatWindowEvent event) {
         int eventType = event.type;
         switch (eventType) {
+            case EventTypes.ADD_ITEM:
             case EventTypes.RESET_ITEM:
             case EventTypes.DELETE_ITEM:
             case EventTypes.NOTIFY_ITEM:
@@ -73,8 +76,8 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     }
 
     private void refreshData() {
-        if (dbHelper != null) {
-            List<RowData> newData = dbHelper.getAllBosses();
+        if (dataManager != null) {
+            List<RowData> newData = dataManager.getAllBosses();
             updateData(newData);
         }
     }
@@ -97,6 +100,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         });
 
         dataList = dataList_sorted;
+        for (RowData d : dataList) d.setSpawnTime(context);
         notifyDataSetChanged();
     }
 
@@ -142,7 +146,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
                                     EventBus.getDefault().post(new BossNotificationEvent(data.text1, elapsedSeconds));
                                 }
                                 data.isNotified = true;
-                                dbHelper.setIsNotified(data.id, true);
+                                dataManager.setIsNotified(data.id, true);
                             }
                         } else if (data.autoReset && data.spawnTime > 0) {
                             // 自动重置
@@ -155,7 +159,11 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
                             data.setSpawnTime(context);
                             data.isNotified = false;
                             if (!isServerRunning) {
-                                dbHelper.resetBossStartTime(data.id, data.startTime);
+                                if (dataManager.isShowingSharedData() && data.docId != null) {
+                                    dataManager.resetBossShared(data.id, data.startTime);
+                                } else {
+                                    dataManager.resetBossStartTime(data.id, data.startTime);
+                                }
                             }
                             notifyItemChanged(i);
                         } else {
@@ -192,8 +200,12 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
             data.startTime = System.currentTimeMillis();
             data.setSpawnTime(context);
             data.isNotified = false;
-            dbHelper.setIsNotified(data.id, false);
-            dbHelper.resetBossStartTime(data.id, data.startTime);
+            dataManager.setIsNotified(data.id, false);
+            if (dataManager.isShowingSharedData() && data.docId != null) {
+                dataManager.resetBossShared(data.id, data.startTime);
+            } else {
+                dataManager.resetBossStartTime(data.id, data.startTime);
+            }
             notifyItemChanged(position);
         }
         EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.RESET_ITEM, position));
@@ -214,7 +226,11 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     public void deleteRow(int position) {
         if (position >= 0 && position < dataList.size()) {
             RowData data = dataList.get(position);
-            dbHelper.deleteBoss(data.id);
+            if (dataManager.isShowingSharedData()) {
+                dataManager.deleteBossShared(data.id);
+            } else {
+                dataManager.deleteBoss(data.id);
+            }
             dataList.remove(position);
             notifyItemRemoved(position);
         }
@@ -270,10 +286,20 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
             }
         });
 
+        if (dataManager.isShowingSharedData()) {
+            holder.editButton.setVisibility(dataManager.canEdit() ? View.VISIBLE : View.GONE);
+            holder.resetButton.setVisibility(dataManager.canReset() ? View.VISIBLE : View.GONE);
+            holder.deleteButton.setVisibility(dataManager.canDelete() ? View.VISIBLE : View.GONE);
+        } else {
+            holder.editButton.setVisibility(View.VISIBLE);
+            holder.resetButton.setVisibility(View.VISIBLE);
+            holder.deleteButton.setVisibility(View.VISIBLE);
+        }
+
         holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (!buttonView.isPressed()) return;
             data.needNotify = isChecked;
-            dbHelper.setNeedNotify(data.id, isChecked);
+            dataManager.setNeedNotify(data.id, isChecked);
             refreshData();
             EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.NOTIFY_ITEM, position));
         });

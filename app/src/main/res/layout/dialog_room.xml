@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/room_id_input"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="@string/join_room_id_hint"
+        android:inputType="number"
+        android:maxLength="3"
+        android:textSize="18sp"
+        android:gravity="center" />
+
+    <EditText
+        android:id="@+id/room_password_input"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:hint="@string/room_password_hint"
+        android:inputType="textPassword"
+        android:maxLength="20"
+        android:textSize="16sp"
+        android:gravity="center" />
+
+    <Button
+        android:id="@+id/btn_join_room"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="12dp"
+        android:text="@string/join_room_btn"
+        android:textSize="18sp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:background="#D0D0D0" />
+
+    <EditText
+        android:id="@+id/room_name_input"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="@string/room_name_hint_create"
+        android:inputType="text"
+        android:maxLength="10"
+        android:textSize="16sp"
+        android:gravity="center" />
+
+    <EditText
+        android:id="@+id/create_user_name"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:hint="@string/create_user_name_hint"
+        android:inputType="text"
+        android:maxLength="10"
+        android:textSize="16sp"
+        android:gravity="center" />
+
+    <Button
+        android:id="@+id/btn_create_room"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/room_create"
+        android:textSize="18sp" />
+
+</LinearLayout>
