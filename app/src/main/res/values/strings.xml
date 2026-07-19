@@ -136,7 +136,7 @@
     <string name="edit_time_second_too_large">秒数不能超过60</string>
 
     <string name="dialog_title_edit_name">修改名称和重置时间</string>
-    <string name="edit_name_success">名称和重置时间修改成功</string>
+    <string name="edit_name_success">修改成功</string>
     <string name="input_name_hint">输入Boss名称</string>
 
     <string name="boss_name_prefix">Boss名称：</string>

@@ -1596,8 +1596,8 @@ public class MainActivity extends AppCompatActivity {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onFloatWindowEvent(UpdateFloatWindowEvent event) {
         if (event.type == EventTypes.EDIT_ITEM || event.type == EventTypes.RESET_ITEM) {
-            updateRoomStatusDisplay();
-        }
+        updateRoomStatusDisplay();
+    }
     }
 
     @Override

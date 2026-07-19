@@ -414,6 +414,8 @@ public class FloatingWindowService extends Service {
             joinRoomPanel.setVisibility(View.VISIBLE);
             floatingRecyclerView.setVisibility(View.GONE);
             if (roomInfoBar != null) roomInfoBar.setVisibility(View.GONE);
+            params.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+            windowManager.updateViewLayout(floatingView, params);
         }
     }
 
