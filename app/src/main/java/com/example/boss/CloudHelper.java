@@ -170,6 +170,11 @@ public class CloudHelper {
         return request("POST", API_PREFIX + "/joinRoom", body);
     }
 
+    public String kickMember(String roomId, String ownerUserId, String targetUserId) throws Exception {
+        String body = "{\"roomId\":\"" + escapeJson(roomId) + "\",\"ownerUserId\":\"" + escapeJson(ownerUserId) + "\",\"targetUserId\":\"" + escapeJson(targetUserId) + "\"}";
+        return request("POST", API_PREFIX + "/kickMember", body);
+    }
+
     private String escapeJson(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");

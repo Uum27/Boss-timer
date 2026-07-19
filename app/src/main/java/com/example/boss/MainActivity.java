@@ -384,6 +384,8 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.room_password_wrong, Toast.LENGTH_SHORT).show();
         } else if (error.contains("max_rooms_reached")) {
             Toast.makeText(this, R.string.max_rooms_reached, Toast.LENGTH_SHORT).show();
+        } else if (error.contains("higher_priority_locked")) {
+            Toast.makeText(this, R.string.higher_priority_locked, Toast.LENGTH_SHORT).show();
         } else if (error.contains("room not found") || error.contains("not found")) {
             Toast.makeText(this, R.string.room_not_found, Toast.LENGTH_SHORT).show();
         } else {
@@ -613,6 +615,7 @@ public class MainActivity extends AppCompatActivity {
                     for (int i = 0; i < members.length(); i++) {
                         JSONObject m = members.getJSONObject(i);
                         String role = m.optString("role");
+                        String targetUserId = m.optString("userId");
                         String roleDisplay;
                         switch (role) {
                             case "owner": roleDisplay = getString(R.string.role_owner); break;
@@ -620,15 +623,52 @@ public class MainActivity extends AppCompatActivity {
                             case "admin": roleDisplay = getString(R.string.role_admin); break;
                             default: roleDisplay = getString(R.string.role_member); break;
                         }
+
+                        LinearLayout row = new LinearLayout(MainActivity.this);
+                        row.setOrientation(LinearLayout.HORIZONTAL);
+                        row.setPadding(16, 10, 16, 10);
+                        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
                         TextView tv = new TextView(MainActivity.this);
                         tv.setText(m.optString("name") + " - " + roleDisplay);
                         tv.setTextSize(16);
-                        tv.setPadding(16, 12, 16, 12);
+                        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+                        tv.setLayoutParams(lp);
                         int idx = i;
                         tv.setOnClickListener(v -> {
                             try { showEditMemberDialog(roomId, members.getJSONObject(idx)); } catch (Exception ignored) {}
                         });
-                        listLayout.addView(tv);
+                        row.addView(tv);
+
+                        if (!"owner".equals(role) && dataManager.isOwner()) {
+                            Button kickBtn = new Button(MainActivity.this);
+                            kickBtn.setText(R.string.kick_member);
+                            kickBtn.setTextSize(12);
+                            kickBtn.setTextColor(0xFFCC0000);
+                            kickBtn.setBackgroundColor(0x00000000);
+                            kickBtn.setMinWidth(0);
+                            kickBtn.setPadding(12, 4, 12, 4);
+                            kickBtn.setOnClickListener(v -> {
+                                new AlertDialog.Builder(MainActivity.this)
+                                        .setTitle(getString(R.string.kick_confirm, m.optString("name")))
+                                        .setPositiveButton(R.string.dialog_button_ok, (dd, ww) -> {
+                                            dataManager.kickMember(roomId, targetUserId, new DataManager.Callback<Boolean>() {
+                                                @Override public void onResult(Boolean ok) {
+                                                    Toast.makeText(MainActivity.this, R.string.edit_time_success, Toast.LENGTH_SHORT).show();
+                                                    showMemberList(roomId);
+                                                }
+                                                @Override public void onError(String err) {
+                                                    Toast.makeText(MainActivity.this, getString(R.string.room_error, err), Toast.LENGTH_SHORT).show();
+                                                }
+                                            });
+                                        })
+                                        .setNegativeButton(R.string.dialog_button_cancel, null)
+                                        .show();
+                            });
+                            row.addView(kickBtn);
+                        }
+
+                        listLayout.addView(row);
 
                         View div = new View(MainActivity.this);
                         div.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1));
@@ -726,8 +766,19 @@ public class MainActivity extends AppCompatActivity {
         EditText passwordInput = dialogView.findViewById(R.id.room_password_input);
         EditText roomNameInput = dialogView.findViewById(R.id.room_name_input);
         EditText createUserNameInput = dialogView.findViewById(R.id.create_user_name);
+        EditText myNameEdit = dialogView.findViewById(R.id.room_name_edit);
+        Button changeNameBtn = dialogView.findViewById(R.id.btn_change_name);
         Button createBtn = dialogView.findViewById(R.id.btn_create_room);
         Button joinBtn = dialogView.findViewById(R.id.btn_join_room);
+
+        changeNameBtn.setOnClickListener(v -> {
+            String newName = myNameEdit.getText().toString().trim();
+            if (!newName.isEmpty() && !newName.equals(dataManager.getUserName())) {
+                dataManager.setUserName(newName);
+                Toast.makeText(MainActivity.this, R.string.edit_name_success, Toast.LENGTH_SHORT).show();
+                myNameEdit.setText("");
+            }
+        });
 
         if (dataManager.isSharedMode()) {
             roomIdInput.setText(dataManager.getCurrentRoomId());
@@ -782,6 +833,8 @@ public class MainActivity extends AppCompatActivity {
             }
             String roomId = roomIdInput.getText().toString().trim();
             String password = passwordInput.getText().toString().trim();
+            String myName = myNameEdit.getText().toString().trim();
+            if (!myName.isEmpty()) dataManager.setUserName(myName);
             if (roomId.isEmpty()) {
                 Toast.makeText(this, R.string.room_id_empty, Toast.LENGTH_SHORT).show();
                 return;
@@ -804,6 +857,11 @@ public class MainActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.9),
+                    (int) (getResources().getDisplayMetrics().heightPixels * 0.8));
+        }
     }
 
     private void showLanguageSwitchDialog() {

@@ -474,6 +474,17 @@ public class DataManager {
         });
     }
 
+    public void kickMember(String roomId, String targetUserId, Callback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                cloudHelper.kickMember(roomId, myUserId, targetUserId);
+                mainHandler.post(() -> callback.onResult(true));
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError(e.getMessage()));
+            }
+        });
+    }
+
     public void updateRoomInfo(String roomId, String roomName, String password, Callback<Boolean> callback) {
         if (myUserId == null) return;
         executor.execute(() -> {

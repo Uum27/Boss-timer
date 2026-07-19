@@ -183,6 +183,10 @@
     <string name="auth_success">인증 성공</string>
     <string name="auth_failed">코드 오류</string>
     <string name="max_rooms_reached">최대 10개 방. 기존 방 삭제 필요.</string>
+    <string name="kick_member">추방</string>
+    <string name="kick_confirm">%s 추방?</string>
+    <string name="change_name">이름 변경</string>
+    <string name="higher_priority_locked">상위 권한 잠금</string>
     <string name="mode_local">로컬 모드</string>
 
     <string name="my_rooms_button">내 방</string>

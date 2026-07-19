@@ -56,6 +56,13 @@ async function bumpVersion(roomId) {
 
 // Roles: owner, admin, member
 // Permissions object on member doc: { canReset: true, canEdit: true, canAdd: true, canDelete: true }
+function rolePriority(role) {
+  if (role === 'owner') return 4;
+  if (role === 'super_admin') return 3;
+  if (role === 'admin') return 2;
+  return 1;
+}
+
 function canDo(member, action) {
   if (!member) return false;
   if (member.role === 'owner' || member.role === 'super_admin') return true;
@@ -265,6 +272,7 @@ async function addBoss(params) {
     needNotify: boss.needNotify !== false,
     autoReset: boss.autoReset !== false,
     showInFloat: boss.showInFloat !== false,
+    lastModifier: userId,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   });
@@ -284,7 +292,19 @@ async function updateBoss(params) {
   if (!canDo(member, 'canEdit') && member.role !== 'owner' && member.role !== 'admin')
     return errResp('no permission to edit boss');
 
-  const up = { updatedAt: Date.now() };
+  const bossDoc = await db.collection(BOSSES).doc(docId).get();
+  if (bossDoc.data.length > 0 && bossDoc.data[0].lastModifier && bossDoc.data[0].updatedAt) {
+    const lastMod = bossDoc.data[0].lastModifier;
+    const elapsed = Date.now() - bossDoc.data[0].updatedAt;
+    if (elapsed < 10000 && lastMod !== userId) {
+      const lastMember = await getMember(roomId, lastMod);
+      if (lastMember && rolePriority(lastMember.role) > rolePriority(member.role)) {
+        return errResp('higher_priority_locked');
+      }
+    }
+  }
+
+  const up = { updatedAt: Date.now(), lastModifier: userId };
   if (boss.name !== undefined) up.name = boss.name;
   if (boss.spawn !== undefined) up.spawn = boss.spawn;
   if (boss.extra !== undefined) up.extra = boss.extra;
@@ -411,6 +431,19 @@ async function verifyAuth(params) {
   return jsonResp({ valid: code === validCode });
 }
 
+async function kickMember(params) {
+  const { roomId, ownerUserId, targetUserId } = params;
+  if (!roomId || !ownerUserId || !targetUserId) return errResp('roomId, ownerUserId, targetUserId required');
+
+  const room = await getRoom(roomId);
+  if (!room) return errResp('room not found');
+  if (room.ownerUserId !== ownerUserId) return errResp('only owner can kick');
+
+  await db.collection(MEMBERS).where({ roomId, userId: targetUserId }).remove();
+  await bumpVersion(roomId);
+  return jsonResp({ success: true });
+}
+
 async function setAuthCode(params) {
   const { code, masterKey } = params;
   if (masterKey !== 'boss2024admin') return errResp('invalid master key');
@@ -443,6 +476,7 @@ const ROUTES = {
   '/updateRoomInfo':   { h: updateRoomInfo,   m: 'POST' },
   '/verifyAuth':       { h: verifyAuth,       m: 'POST' },
   '/setAuthCode':      { h: setAuthCode,      m: 'POST' },
+  '/kickMember':       { h: kickMember,       m: 'POST' },
 };
 
 exports.main = async (event, context) => {

@@ -414,9 +414,6 @@ public class FloatingWindowService extends Service {
             joinRoomPanel.setVisibility(View.VISIBLE);
             floatingRecyclerView.setVisibility(View.GONE);
             if (roomInfoBar != null) roomInfoBar.setVisibility(View.GONE);
-            if (dataManager.getUserName() != null) joinRoomNameInput.setText(dataManager.getUserName());
-            params.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-            windowManager.updateViewLayout(floatingView, params);
         }
     }
 
@@ -942,6 +939,33 @@ public class FloatingWindowService extends Service {
                 });
 
                 moveBtn.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        switch (event.getAction()) {
+                            case MotionEvent.ACTION_DOWN:
+                                updateScreenBounds();
+                                initialX = params.x;
+                                initialY = params.y;
+                                initialTouchX = event.getRawX();
+                                initialTouchY = event.getRawY();
+                                return true;
+                            case MotionEvent.ACTION_MOVE:
+                                params.x = initialX + (int) (event.getRawX() - initialTouchX);
+                                params.y = initialY + (int) (event.getRawY() - initialTouchY);
+                                if (params.x < 0) params.x = 0;
+                                if (params.x > appUsableWidth - floatingViewWidth)
+                                    params.x = appUsableWidth - floatingViewWidth;
+                                if (params.y < 0) params.y = 0;
+                                if (params.y > appUsableHeight - floatingViewHeight)
+                                    params.y = appUsableHeight - floatingViewHeight;
+                                windowManager.updateViewLayout(floatingView, params);
+                                return true;
+                        }
+                        return false;
+                    }
+                });
+
+                roomBarLayout.setOnTouchListener(new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
                         switch (event.getAction()) {

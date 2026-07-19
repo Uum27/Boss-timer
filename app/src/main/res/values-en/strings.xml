@@ -183,6 +183,10 @@
     <string name="auth_success">Authorized</string>
     <string name="auth_failed">Wrong code</string>
     <string name="max_rooms_reached">Max 10 rooms. Delete old rooms first.</string>
+    <string name="kick_member">Kick</string>
+    <string name="kick_confirm">Kick %s?</string>
+    <string name="change_name">Change Name</string>
+    <string name="higher_priority_locked">Locked by higher priority</string>
     <string name="mode_local">Local Mode</string>
 
     <string name="my_rooms_button">My Rooms</string>

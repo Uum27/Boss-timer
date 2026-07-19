@@ -189,6 +189,10 @@
     <string name="auth_success">授权成功</string>
     <string name="auth_failed">授权码错误</string>
     <string name="max_rooms_reached">最多创建10个房间，请先删除旧房间</string>
+    <string name="kick_member">踢出</string>
+    <string name="kick_confirm">确认踢出 %s ？</string>
+    <string name="change_name">修改名称</string>
+    <string name="higher_priority_locked">已被更高权限锁定</string>
     <string name="mode_local">本地模式</string>
 
     <string name="my_rooms_button">我的房间</string>
