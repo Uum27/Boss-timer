@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Boss Timer</string>
+    <string name="app_name">Boss Timer Share</string>
 
     <string name="search_hint">Search Boss name…</string>
     <string name="column_name">Name</string>
@@ -59,7 +59,7 @@
     <string name="dialog_button_cancel">Cancel</string>
 
     <string name="author_dialog_title">Author Statement</string>
-    <string name="author_statement">Boss Timer app. Local mode: data stored locally. Shared mode: synced via cloud.</string>
+    <string name="author_statement">Boss Timer App.\n\n[Data]\nLocal: stored on device.\nShared: synced via cloud.\n\n[Shared Mode]\n1. Tap "Share" button\n2. Enter auth code on first use\n3. Enter 3-digit room ID + password to join, or create a new room\n\n[Roles]\nOwner: full access (can set Super Admin)\nSuper Admin: same as Owner\nAdmin: edit + reset\nMember: view only\n\n[Float Window]\nShare | Min | Room buttons\n"Share" toggles local/shared view\n"Room" shows info or room list\n☆ on blue bar to favorite rooms\nFavorited rooms appear in room list to join\n\n[Sync]\nOwner/Super Admin changes push instantly\nVersion checked every 60s\nDownload on version change only\n\n[Language]\n🌐 button to switch CN/EN/KO.\n\n[Contact]\nQQ: 1781391759 / 810026494</string>
 
     <string name="donate_title">Thank you for support</string>
     <string name="donate_subtitle">Scan to donate</string>
@@ -156,6 +156,7 @@
 
     <string name="shared_header">Room [%s] · %s</string>
     <string name="role_owner">Owner</string>
+    <string name="role_super_admin">Super Admin</string>
     <string name="role_admin">Admin</string>
     <string name="role_member">Member</string>
 
@@ -174,12 +175,21 @@
     <string name="room_version_label">Ver: </string>
     <string name="room_password_label">Pwd: </string>
     <string name="room_no_password">No password</string>
+    <string name="password_hint">Password</string>
+    <string name="confirm_btn">OK</string>
+    <string name="enter_new_password">New pwd:</string>
+    <string name="auth_title">Authorization</string>
+    <string name="auth_hint">Enter auth code</string>
+    <string name="auth_success">Authorized</string>
+    <string name="auth_failed">Wrong code</string>
+    <string name="max_rooms_reached">Max 10 rooms. Delete old rooms first.</string>
     <string name="mode_local">Local Mode</string>
 
     <string name="my_rooms_button">My Rooms</string>
     <string name="my_rooms_title">My Rooms</string>
-    <string name="my_rooms_empty">No rooms created</string>
+    <string name="my_rooms_empty">No created or favorited rooms</string>
     <string name="manage_room_title">Manage Room %s</string>
+    <string name="manage_room_title_simple">Manage</string>
     <string name="manage_room_save">Save</string>
     <string name="manage_room_delete">Delete Room</string>
     <string name="manage_room_delete_confirm">Confirm</string>

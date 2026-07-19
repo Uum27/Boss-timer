@@ -7,20 +7,22 @@ android {
     compileSdk {
         version = release(36)
     }
+    lint {
+        checkReleaseBuilds = false
+    }
 
     defaultConfig {
         applicationId = "com.example.boss"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.2"
+        versionCode = 3
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            // 正式版：启用混淆、压缩、对齐
             isMinifyEnabled = true
             isShrinkResources = true
             isZipAlignEnabled = true
@@ -28,14 +30,21 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // 签名配置（如果你有 release 签名，取消下面注释并配置 signingConfigs）
+            // 签名配置（如果你有正式签名，取消注释并配置）
             // signingConfig = signingConfigs.getByName("release")
         }
 
-        // 👇 新增测试版（debug）配置
         debug {
-            // 包名加后缀 .test，与正式版区分，可同时安装
+            // 包名加后缀，与正式版区分（已存在）
             applicationIdSuffix = ".test"
+
+            // 👇 新增：版本号加后缀，方便在“设置-应用”里识别
+            versionNameSuffix = "-test"
+
+            // 👇 新增：应用显示名称改成“Boss计时器（测试版）”
+            // 这会覆盖 src/main/res/values/strings.xml 里的 app_name
+            resValue("string", "app_name", "Boss计时器（共享测试版)")
+
             // 调试版不混淆，加快构建
             isMinifyEnabled = false
             isShrinkResources = false

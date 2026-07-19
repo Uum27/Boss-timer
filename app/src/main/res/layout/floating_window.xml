@@ -261,6 +261,66 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- 授权面板 -->
+    <LinearLayout
+        android:id="@+id/auth_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#50000000"
+        android:padding="8dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/auth_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/auth_title"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:padding="4dp" />
+
+        <EditText
+            android:id="@+id/auth_input"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:hint="@string/auth_hint"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#AAFFFFFF"
+            android:textSize="12sp"
+            android:inputType="textPassword"
+            android:background="#30000000"
+            android:paddingStart="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="4dp">
+
+            <Button
+                android:id="@+id/btn_auth_confirm"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="30dp"
+                android:text="@string/confirm_btn"
+                android:textSize="13sp"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/btn_float_bg" />
+
+            <Button
+                android:id="@+id/btn_auth_cancel"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="30dp"
+                android:text="@string/dialog_button_cancel"
+                android:textSize="13sp"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/btn_float_bg" />
+        </LinearLayout>
+    </LinearLayout>
+
     <!-- 房间列表面板 -->
     <LinearLayout
         android:id="@+id/room_list_panel"

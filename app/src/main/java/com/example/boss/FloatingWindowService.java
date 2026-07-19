@@ -100,6 +100,11 @@ public class FloatingWindowService extends Service {
     private long lastClickTime = 0;
     private static final long DOUBLE_CLICK_TIME_DELTA = 300;
 
+    private View authPanel;
+    private EditText authInput;
+    private TextView authTitle;
+    private Button authConfirmBtn;
+    private Button authCancelBtn;
     private View joinRoomPanel;
     private View roomListPanel;
     private EditText joinRoomIdInput;
@@ -250,7 +255,10 @@ public class FloatingWindowService extends Service {
         if (roomInfoBar != null && roomInfoBar.getVisibility() == View.VISIBLE) {
             roomInfoBar.setVisibility(View.GONE);
         }
-        if (roomListPanel != null) roomListPanel.setVisibility(View.GONE);
+        if (roomListPanel != null) {
+            roomListPanel.setVisibility(View.GONE);
+            ((LinearLayout) roomListPanel).removeAllViews();
+        }
         floatingRecyclerView.setVisibility(View.VISIBLE);
     }
 
@@ -305,6 +313,11 @@ public class FloatingWindowService extends Service {
 
         if (favoriteText != null) favoriteText.setText(c.getString(R.string.favorite));
 
+        if (authTitle != null) authTitle.setText(c.getString(R.string.auth_title));
+        if (authInput != null) authInput.setHint(c.getString(R.string.auth_hint));
+        if (authConfirmBtn != null) authConfirmBtn.setText(c.getString(R.string.confirm_btn));
+        if (authCancelBtn != null) authCancelBtn.setText(c.getString(R.string.dialog_button_cancel));
+
         updateShareButtonText();
     }
 
@@ -342,12 +355,51 @@ public class FloatingWindowService extends Service {
         }
     }
 
+    private void showAuthPanel() {
+        params.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        windowManager.updateViewLayout(floatingView, params);
+        authPanel.setVisibility(View.VISIBLE);
+        floatingRecyclerView.setVisibility(View.GONE);
+        joinRoomPanel.setVisibility(View.GONE);
+        if (roomInfoBar != null) roomInfoBar.setVisibility(View.GONE);
+        authInput.requestFocus();
+    }
+
+    private void hideAuthPanel() {
+        params.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        windowManager.updateViewLayout(floatingView, params);
+        authPanel.setVisibility(View.GONE);
+        floatingRecyclerView.setVisibility(View.VISIBLE);
+    }
+
+    private void submitAuth() {
+        String code = authInput.getText().toString().trim();
+        dataManager.verifyAuth(code, new DataManager.Callback<Boolean>() {
+            @Override public void onResult(Boolean valid) {
+                if (valid) {
+                    getSharedPreferences("boss_auth", MODE_PRIVATE).edit().putBoolean("authed", true).apply();
+                    hideAuthPanel();
+                    showJoinPanel();
+                } else {
+                    Toast.makeText(FloatingWindowService.this, getLocalizedContext().getString(R.string.auth_failed), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override public void onError(String error) {
+                Toast.makeText(FloatingWindowService.this, getLocalizedContext().getString(R.string.auth_failed), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void toggleShareMode() {
         if (dataManager.isSharedMode()) {
             dataManager.setShowSharedData(!dataManager.isShowingSharedData());
             updateShareButtonText();
             updateModeIndicator();
             refreshData();
+            return;
+        }
+        if (!getSharedPreferences("boss_auth", MODE_PRIVATE).getBoolean("authed", false)) {
+            showAuthPanel();
             return;
         }
         if (joinRoomPanel != null && joinRoomPanel.getVisibility() == View.VISIBLE) {
@@ -396,7 +448,10 @@ public class FloatingWindowService extends Service {
         dataManager.joinRoom(roomId, password, new DataManager.Callback<String>() {
             @Override
             public void onResult(String result) {
-                dataManager.setShowSharedData(true);
+                if (password != null && !password.isEmpty()) {
+                    saveRoomPassword(roomId, password);
+                }
+                        dataManager.setShowSharedData(true);
                 hideJoinPanel();
                 updateShareButtonText();
                 updateModeIndicator();
@@ -417,6 +472,16 @@ public class FloatingWindowService extends Service {
 
     private static final String FAV_PREFS = "boss_fav_rooms";
     private static final String FAV_KEY = "fav_ids";
+    private static final String PWD_PREFS = "boss_room_pwds";
+
+    private void saveRoomPassword(String roomId, String password) {
+        if (password == null || password.isEmpty()) return;
+        getSharedPreferences(PWD_PREFS, MODE_PRIVATE).edit().putString(roomId, password).apply();
+    }
+
+    private String getSavedRoomPassword(String roomId) {
+        return getSharedPreferences(PWD_PREFS, MODE_PRIVATE).getString(roomId, "");
+    }
 
     private boolean isRoomFavorite(String roomId) {
         try {
@@ -466,6 +531,61 @@ public class FloatingWindowService extends Service {
         }
     }
 
+    private void showInlinePasswordInput(LinearLayout panel, String roomId, String roomName, boolean hasPwd, String icon, Button joinBtn, TextView nameTv) {
+        Context c = getLocalizedContext();
+        joinBtn.setVisibility(View.GONE);
+        nameTv.setText(icon + " " + roomName + " (" + roomId + ")");
+
+        EditText pwdInput = new EditText(FloatingWindowService.this);
+        pwdInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        pwdInput.setTextSize(11);
+        pwdInput.setTextColor(0xFFFFFFFF);
+        pwdInput.setHintTextColor(0xAAFFFFFF);
+        pwdInput.setHint(c.getString(R.string.room_password_hint));
+        pwdInput.setBackgroundColor(0x30000000);
+        pwdInput.setPadding(4, 4, 4, 4);
+        LinearLayout.LayoutParams elp = new LinearLayout.LayoutParams(0, dpToPx(26), 0.6f);
+        pwdInput.setLayoutParams(elp);
+
+        Button confirmBtn = new Button(FloatingWindowService.this);
+        confirmBtn.setText(c.getString(R.string.confirm_btn));
+        confirmBtn.setTextSize(11);
+        confirmBtn.setTextColor(0xFFFFFFFF);
+        confirmBtn.setBackgroundColor(0x00000000);
+        confirmBtn.setMinWidth(0);
+        confirmBtn.setPadding(8, 0, 8, 0);
+
+        // Remove the old join button and add new views
+        ViewGroup row = (ViewGroup) joinBtn.getParent();
+        int idx = row.indexOfChild(joinBtn);
+        row.removeView(joinBtn);
+        row.addView(pwdInput, idx);
+        row.addView(confirmBtn, idx + 1);
+
+        confirmBtn.setOnClickListener(cv -> {
+            String newPwd = pwdInput.getText().toString().trim();
+            dataManager.joinRoom(roomId, newPwd, new DataManager.Callback<String>() {
+                @Override public void onResult(String result) {
+                    saveRoomPassword(roomId, newPwd);
+                    params.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+                    windowManager.updateViewLayout(floatingView, params);
+                    panel.setVisibility(View.GONE);
+                    floatingRecyclerView.setVisibility(View.VISIBLE);
+                    updateShareButtonText();
+                    updateModeIndicator();
+                    refreshData();
+                }
+                @Override public void onError(String error) {
+                    Toast.makeText(FloatingWindowService.this, R.string.room_password_wrong, Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        params.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        windowManager.updateViewLayout(floatingView, params);
+        pwdInput.requestFocus();
+    }
+
     private void addRoomRow(LinearLayout panel, String roomName, String roomId, boolean hasPwd, String icon) {
         String pwd = hasPwd ? " [pw]" : "";
 
@@ -481,17 +601,26 @@ public class FloatingWindowService extends Service {
         tv.setTextColor(0xFFFFFFFF);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         tv.setLayoutParams(lp);
+        tv.setOnLongClickListener(v -> {
+            if (icon.equals("★")) {
+                removeFavoriteRoom(roomId);
+                floatingRecyclerView.setVisibility(View.VISIBLE);
+                panel.setVisibility(View.GONE);
+            }
+            return true;
+        });
         row.addView(tv);
 
         Button btn = new Button(FloatingWindowService.this);
-        btn.setText(R.string.room_join);
+        btn.setText(getLocalizedContext().getString(R.string.room_join));
         btn.setTextSize(11);
         btn.setTextColor(0xFFFFFFFF);
         btn.setBackgroundColor(0x00000000);
         btn.setMinWidth(0);
         btn.setPadding(12, 0, 12, 0);
         btn.setOnClickListener(v -> {
-            dataManager.joinRoom(roomId, "", new DataManager.Callback<String>() {
+            String savedPwd = getSavedRoomPassword(roomId);
+            dataManager.joinRoom(roomId, savedPwd, new DataManager.Callback<String>() {
                 @Override public void onResult(String result) {
                     dataManager.setShowSharedData(true);
                     panel.setVisibility(View.GONE);
@@ -501,10 +630,13 @@ public class FloatingWindowService extends Service {
                     refreshData();
                 }
                 @Override public void onError(String error) {
-                    if (error.contains("wrong password")) {
-                        Toast.makeText(FloatingWindowService.this, R.string.room_password_wrong, Toast.LENGTH_SHORT).show();
-                    } else if (error.contains("room not found") || error.contains("not found")) {
+                    if (error.contains("room not found") || error.contains("not found")) {
+                        removeFavoriteRoom(roomId);
+                        panel.setVisibility(View.GONE);
+                        floatingRecyclerView.setVisibility(View.VISIBLE);
                         Toast.makeText(FloatingWindowService.this, R.string.room_not_found, Toast.LENGTH_SHORT).show();
+                    } else if (error.contains("wrong password")) {
+                        showInlinePasswordInput(panel, roomId, roomName, hasPwd, icon, btn, tv);
                     } else {
                         Toast.makeText(FloatingWindowService.this, error, Toast.LENGTH_SHORT).show();
                     }
@@ -518,6 +650,20 @@ public class FloatingWindowService extends Service {
         div.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1));
         div.setBackgroundColor(0x20FFFFFF);
         panel.addView(div);
+    }
+
+    private void removeFavoriteRoom(String roomId) {
+        try {
+            JSONArray favs = getFavoriteRooms();
+            JSONArray newFavs = new JSONArray();
+            for (int i = 0; i < favs.length(); i++) {
+                JSONObject f = favs.getJSONObject(i);
+                if (!roomId.equals(f.optString("roomId"))) {
+                    newFavs.put(f);
+                }
+            }
+            getSharedPreferences(FAV_PREFS, MODE_PRIVATE).edit().putString(FAV_KEY, newFavs.toString()).apply();
+        } catch (Exception ignored) {}
     }
 
     private void showMyRoomsInFloat() {
@@ -535,7 +681,7 @@ public class FloatingWindowService extends Service {
                     JSONArray rooms = json.optJSONArray("rooms");
                     JSONArray favs = getFavoriteRooms();
                     if ((rooms == null || rooms.length() == 0) && favs.length() == 0) {
-                        Toast.makeText(FloatingWindowService.this, R.string.my_rooms_empty, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(FloatingWindowService.this, getLocalizedContext().getString(R.string.my_rooms_empty), Toast.LENGTH_SHORT).show();
                         return;
                     }
                     LinearLayout panel = (LinearLayout) roomListPanel;
@@ -566,7 +712,7 @@ public class FloatingWindowService extends Service {
                 }
             }
             @Override public void onError(String error) {
-                Toast.makeText(FloatingWindowService.this, error, Toast.LENGTH_SHORT).show();
+                Toast.makeText(FloatingWindowService.this, getLocalizedContext().getString(R.string.my_rooms_empty), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -584,6 +730,7 @@ public class FloatingWindowService extends Service {
             String roleText;
             switch (dataManager.getMyRole()) {
                 case "owner": roleText = c.getString(R.string.role_owner); break;
+                case "super_admin": roleText = c.getString(R.string.role_super_admin); break;
                 case "admin": roleText = c.getString(R.string.role_admin); break;
                 default: roleText = c.getString(R.string.role_member); break;
             }
@@ -717,6 +864,11 @@ public class FloatingWindowService extends Service {
         roomBtn = floatingView.findViewById(R.id.btn_room);
         joinRoomPanel = floatingView.findViewById(R.id.join_room_panel);
         roomListPanel = floatingView.findViewById(R.id.room_list_panel);
+        authPanel = floatingView.findViewById(R.id.auth_panel);
+        authInput = floatingView.findViewById(R.id.auth_input);
+        authTitle = floatingView.findViewById(R.id.auth_title);
+        authConfirmBtn = floatingView.findViewById(R.id.btn_auth_confirm);
+        authCancelBtn = floatingView.findViewById(R.id.btn_auth_cancel);
         joinRoomIdInput = floatingView.findViewById(R.id.join_room_id);
         joinRoomPasswordInput = floatingView.findViewById(R.id.join_room_password);
         joinRoomNameInput = floatingView.findViewById(R.id.join_room_name);
@@ -748,6 +900,8 @@ public class FloatingWindowService extends Service {
         roomBtn.setOnClickListener(v -> toggleRoomInfo());
         joinConfirmBtn.setOnClickListener(v -> handleJoinRoom());
         joinCancelBtn.setOnClickListener(v -> hideJoinPanel());
+        authConfirmBtn.setOnClickListener(v -> submitAuth());
+        authCancelBtn.setOnClickListener(v -> hideAuthPanel());
         updateShareButtonText();
         updateModeIndicator();
 

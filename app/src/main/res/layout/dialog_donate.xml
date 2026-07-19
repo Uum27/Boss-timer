@@ -31,6 +31,16 @@
             android:padding="4dp"
             android:scaleType="centerInside"/>
 
+        <ImageView
+            android:id="@+id/qr_code_image2"
+            android:layout_width="0dp"
+            android:layout_height="200dp"
+            android:layout_weight="1"
+            android:src="@drawable/qr_code1"
+            android:contentDescription="打赏二维码2"
+            android:padding="4dp"
+            android:scaleType="centerInside"/>
+
     </LinearLayout>
 
     <TextView

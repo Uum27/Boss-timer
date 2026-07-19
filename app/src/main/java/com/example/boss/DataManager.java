@@ -94,8 +94,15 @@ public class DataManager {
     }
 
     public void setUserName(String userName) {
+        if (userName == null || userName.equals(myUserName)) return;
         this.myUserName = userName;
         prefs.edit().putString(KEY_USER_NAME, userName).apply();
+        if (isSharedMode && currentRoomId != null && myUserId != null) {
+            executor.execute(() -> {
+                try { cloudHelper.updateMyName(currentRoomId, myUserId, userName); }
+                catch (Exception ignored) {}
+            });
+        }
     }
 
     public void registerUser(String name, Callback<String> callback) {
@@ -128,9 +135,9 @@ public class DataManager {
     public String getCurrentRoomName() { return currentRoomName; }
     public int getCurrentRoomVersion() { return currentRoomVersion; }
     public String getMyRole() { return myRole; }
-    public boolean isOwner() { return "owner".equals(myRole); }
+    public boolean isOwner() { return "owner".equals(myRole) || "super_admin".equals(myRole); }
     public boolean canEdit() { return isOwner() || "admin".equals(myRole) || hasPermission("canEdit"); }
-    public boolean canAdd() { return isOwner() || "admin".equals(myRole) || hasPermission("canAdd"); }
+    public boolean canAdd() { return isOwner() || hasPermission("canAdd"); }
     public boolean canDelete() { return isOwner() || hasPermission("canDelete"); }
     public boolean canReset() { return isOwner() || "admin".equals(myRole) || hasPermission("canReset"); }
 
@@ -142,7 +149,11 @@ public class DataManager {
     }
 
     public boolean isShowingSharedData() { return showSharedData; }
-    public void setShowSharedData(boolean show) { this.showSharedData = show; refreshCache(); }
+    public void setShowSharedData(boolean show) {
+        this.showSharedData = show;
+        refreshCache();
+        EventBus.getDefault().post(new DataChangedEvent("mode_switch"));
+    }
 
     public List<RowData> getCachedData() {
         synchronized (cachedData) { return new ArrayList<>(cachedData); }
@@ -363,6 +374,17 @@ public class DataManager {
         if (syncRunnable != null) { syncHandler.removeCallbacks(syncRunnable); syncRunnable = null; }
     }
 
+    private boolean hasBossNearExpiry() {
+        synchronized (cachedData) {
+            long now = System.currentTimeMillis();
+            for (RowData d : cachedData) {
+                long remaining = d.spawnTime - ((now - d.startTime) / 1000);
+                if (remaining > 0 && remaining <= 180) return true;
+            }
+        }
+        return false;
+    }
+
     private void checkAndSyncVersion() {
         if (isSyncing || currentRoomId == null || myUserId == null) return;
         isSyncing = true;
@@ -392,10 +414,8 @@ public class DataManager {
                 for (int i = 0; i < bosses.length(); i++) {
                     JSONObject b = bosses.getJSONObject(i);
                     RowData data = jsonToRowData(b);
-                    if (data.showInFloat) {
-                        dbHelper.insertOrUpdateBoss(data);
-                        if (data.docId != null) cloudDocIds.add(data.docId);
-                    }
+                    dbHelper.insertOrUpdateBoss(data);
+                    if (data.docId != null) cloudDocIds.add(data.docId);
                 }
                 dbHelper.deleteRemoteBossesNotIn(currentRoomId, cloudDocIds);
             }
@@ -427,7 +447,10 @@ public class DataManager {
     }
 
     public void fetchMyRooms(Callback<String> callback) {
-        if (myUserId == null) { callback.onError("not registered"); return; }
+        if (myUserId == null) {
+            mainHandler.post(() -> callback.onResult("{\"rooms\":[]}"));
+            return;
+        }
         executor.execute(() -> {
             try {
                 String result = cloudHelper.getMyRooms(myUserId);
@@ -547,9 +570,28 @@ public class DataManager {
         return d;
     }
 
+    public void verifyAuth(String code, Callback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                String result = cloudHelper.verifyAuth(code);
+                JSONObject json = new JSONObject(result);
+                boolean valid = json.optBoolean("valid", false);
+                mainHandler.post(() -> callback.onResult(valid));
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError(e.getMessage()));
+            }
+        });
+    }
+
     public void onDestroy() {
         stopPeriodicSync();
         executor.shutdown();
+    }
+
+    // ---- favorites (stored in SharedPreferences) ----
+
+    public String getFavoritesJson() {
+        return context.getSharedPreferences("boss_fav_rooms", Context.MODE_PRIVATE).getString("fav_ids", "[]");
     }
 
     public interface Callback<T> {

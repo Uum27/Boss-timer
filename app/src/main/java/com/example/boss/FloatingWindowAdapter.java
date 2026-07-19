@@ -212,7 +212,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
         });
 
         if (dataManager.isShowingSharedData()) {
-            holder.btnReset.setVisibility(dataManager.canReset() ? View.VISIBLE : View.GONE);
+            holder.btnReset.setVisibility(dataManager.canReset() ? View.VISIBLE : View.INVISIBLE);
         } else {
             holder.btnReset.setVisibility(View.VISIBLE);
         }

@@ -269,27 +269,30 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         }
 
         holder.editButton.setOnClickListener(v -> {
+            if (dataManager.isShowingSharedData() && !dataManager.canEdit()) return;
             if (buttonClickListener != null) {
                 buttonClickListener.onButtonClick(position, ButtonType.EDIT);
             }
         });
 
         holder.resetButton.setOnClickListener(v -> {
+            if (dataManager.isShowingSharedData() && !dataManager.canReset()) return;
             if (buttonClickListener != null) {
                 buttonClickListener.onButtonClick(position, ButtonType.RESET);
             }
         });
 
         holder.deleteButton.setOnClickListener(v -> {
+            if (dataManager.isShowingSharedData() && !dataManager.canDelete()) return;
             if (buttonClickListener != null) {
                 buttonClickListener.onButtonClick(position, ButtonType.DELETE);
             }
         });
 
         if (dataManager.isShowingSharedData()) {
-            holder.editButton.setVisibility(dataManager.canEdit() ? View.VISIBLE : View.GONE);
-            holder.resetButton.setVisibility(dataManager.canReset() ? View.VISIBLE : View.GONE);
-            holder.deleteButton.setVisibility(dataManager.canDelete() ? View.VISIBLE : View.GONE);
+            holder.editButton.setVisibility(dataManager.canEdit() ? View.VISIBLE : View.INVISIBLE);
+            holder.resetButton.setVisibility(dataManager.canReset() ? View.VISIBLE : View.INVISIBLE);
+            holder.deleteButton.setVisibility(dataManager.canDelete() ? View.VISIBLE : View.INVISIBLE);
         } else {
             holder.editButton.setVisibility(View.VISIBLE);
             holder.resetButton.setVisibility(View.VISIBLE);
@@ -304,19 +307,19 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
             EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.NOTIFY_ITEM, position));
         });
 
-        // ★ 新增：点击 text1 text2 和 text3 触发回调
+        boolean canEdit = !dataManager.isShowingSharedData() || dataManager.canEdit();
         holder.text1.setOnClickListener(v -> {
-            if (rowClickListener != null) {
+            if (canEdit && rowClickListener != null) {
                 rowClickListener.onText1Click(position);
             }
         });
         holder.text2.setOnClickListener(v -> {
-            if (rowClickListener != null) {
+            if (canEdit && rowClickListener != null) {
                 rowClickListener.onText2Click(position);
             }
         });
         holder.text3.setOnClickListener(v -> {
-            if (rowClickListener != null) {
+            if (canEdit && rowClickListener != null) {
                 rowClickListener.onText3Click(position);
             }
         });

@@ -161,6 +161,15 @@ public class CloudHelper {
         return request("POST", API_PREFIX + "/updateRoomInfo", sb.toString());
     }
 
+    public String verifyAuth(String code) throws Exception {
+        return request("POST", API_PREFIX + "/verifyAuth", "{\"code\":\"" + escapeJson(code) + "\"}");
+    }
+
+    public String updateMyName(String roomId, String userId, String userName) throws Exception {
+        String body = "{\"roomId\":\"" + escapeJson(roomId) + "\",\"userId\":\"" + escapeJson(userId) + "\",\"userName\":\"" + escapeJson(userName) + "\"}";
+        return request("POST", API_PREFIX + "/joinRoom", body);
+    }
+
     private String escapeJson(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");

@@ -70,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
     public static int appUsableWidth;
     public static int appUsableHeight;
 
+    private static final String PREFS_AUTH = "boss_auth";
+    private static final String KEY_AUTHED = "authed";
     private static final String PREFS_NAME = "AppPrefs";
     private static final String FIRST_LAUNCH = "FirstLaunch";
     private Handler searchHandler = new Handler();
@@ -80,7 +82,10 @@ public class MainActivity extends AppCompatActivity {
     private PowerManager.WakeLock wakeLock;
     private Button roomButton;
     private Button leaveRoomButton;
-    private TextView sharedHeader;
+    private View sharedHeader;
+    private TextView headerText;
+    private TextView headerFavIcon;
+    private TextView headerFavText;
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -274,12 +279,111 @@ public class MainActivity extends AppCompatActivity {
         Button myRoomsBtn = findViewById(R.id.btn_my_rooms);
         myRoomsBtn.setOnClickListener(v -> showMyRoomsDialog());
         sharedHeader = findViewById(R.id.shared_mode_header);
+        headerText = findViewById(R.id.header_text);
+        headerFavIcon = findViewById(R.id.header_fav_icon);
+        headerFavText = findViewById(R.id.header_fav_text);
+        headerFavIcon.setOnClickListener(v -> toggleMainFav());
+        headerFavText.setOnClickListener(v -> toggleMainFav());
         updateRoomStatusDisplay();
+    }
+
+    private void showMainPwdInput(String rid, String name, LinearLayout parent) {
+        EditText pwdInput = new EditText(this);
+        pwdInput.setHint(R.string.room_password_hint);
+        pwdInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        pwdInput.setPadding(16, 16, 16, 16);
+
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.enter_new_password))
+                .setView(pwdInput)
+                .setPositiveButton(R.string.confirm_btn, (d, w) -> {
+                    String newPwd = pwdInput.getText().toString().trim();
+                    dataManager.joinRoom(rid, newPwd, new DataManager.Callback<String>() {
+                        @Override public void onResult(String result) {
+                            getSharedPreferences("boss_room_pwds", MODE_PRIVATE).edit().putString(rid, newPwd).apply();
+                            updateRoomStatusDisplay();
+                            adapter.updateData(dataManager.getAllBosses());
+                        }
+                        @Override public void onError(String error) {
+                            Toast.makeText(MainActivity.this, R.string.room_password_wrong, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton(R.string.dialog_button_cancel, null)
+                .create().show();
+    }
+
+    private boolean checkAuth() {
+        if (getSharedPreferences(PREFS_AUTH, MODE_PRIVATE).getBoolean(KEY_AUTHED, false)) return true;
+        EditText input = new EditText(this);
+        input.setHint(R.string.auth_hint);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.auth_title)
+                .setView(input)
+                .setPositiveButton(R.string.confirm_btn, (d, w) -> {
+                    String code = input.getText().toString().trim();
+                    dataManager.verifyAuth(code, new DataManager.Callback<Boolean>() {
+                        @Override public void onResult(Boolean valid) {
+                            if (valid) {
+                                getSharedPreferences(PREFS_AUTH, MODE_PRIVATE).edit().putBoolean(KEY_AUTHED, true).apply();
+                                Toast.makeText(MainActivity.this, R.string.auth_success, Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(MainActivity.this, R.string.auth_failed, Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                        @Override public void onError(String error) {
+                            Toast.makeText(MainActivity.this, R.string.auth_failed, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton(R.string.dialog_button_cancel, null)
+                .show();
+        return false;
+    }
+
+    private boolean isRoomFav() {
+        try {
+            String favJson = getSharedPreferences("boss_fav_rooms", MODE_PRIVATE).getString("fav_ids", "[]");
+            org.json.JSONArray favs = new org.json.JSONArray(favJson);
+            for (int i = 0; i < favs.length(); i++) {
+                if (dataManager.getCurrentRoomId().equals(favs.getJSONObject(i).optString("roomId"))) return true;
+            }
+        } catch (Exception e) {}
+        return false;
+    }
+
+    private void toggleMainFav() {
+        if (!dataManager.isSharedMode()) return;
+        String rid = dataManager.getCurrentRoomId();
+        String rname = dataManager.getCurrentRoomName();
+        try {
+            String favJson = getSharedPreferences("boss_fav_rooms", MODE_PRIVATE).getString("fav_ids", "[]");
+            org.json.JSONArray favs = new org.json.JSONArray(favJson);
+            org.json.JSONArray newFavs = new org.json.JSONArray();
+            boolean removed = false;
+            for (int i = 0; i < favs.length(); i++) {
+                org.json.JSONObject f = favs.getJSONObject(i);
+                if (rid.equals(f.optString("roomId"))) { removed = true; }
+                else { newFavs.put(f); }
+            }
+            if (!removed) {
+                org.json.JSONObject obj = new org.json.JSONObject();
+                obj.put("roomId", rid);
+                obj.put("roomName", rname != null ? rname : rid);
+                newFavs.put(obj);
+            }
+            getSharedPreferences("boss_fav_rooms", MODE_PRIVATE).edit().putString("fav_ids", newFavs.toString()).apply();
+            headerFavIcon.setText(removed ? "☆" : "★");
+            headerFavText.setText(removed ? getString(R.string.favorite) : getString(R.string.favorite));
+        } catch (Exception ignored) {}
     }
 
     private void showRoomError(String error) {
         if (error.contains("wrong password")) {
             Toast.makeText(this, R.string.room_password_wrong, Toast.LENGTH_SHORT).show();
+        } else if (error.contains("max_rooms_reached")) {
+            Toast.makeText(this, R.string.max_rooms_reached, Toast.LENGTH_SHORT).show();
         } else if (error.contains("room not found") || error.contains("not found")) {
             Toast.makeText(this, R.string.room_not_found, Toast.LENGTH_SHORT).show();
         } else {
@@ -287,13 +391,110 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void removeFavIfNeeded(String rid, String error) {
+        if (!error.contains("room not found") && !error.contains("not found")) return;
+        try {
+            String favJson = getSharedPreferences("boss_fav_rooms", MODE_PRIVATE).getString("fav_ids", "[]");
+            org.json.JSONArray favs = new org.json.JSONArray(favJson);
+            org.json.JSONArray newFavs = new org.json.JSONArray();
+            for (int i = 0; i < favs.length(); i++) {
+                org.json.JSONObject f = favs.getJSONObject(i);
+                if (!rid.equals(f.optString("roomId"))) newFavs.put(f);
+            }
+            getSharedPreferences("boss_fav_rooms", MODE_PRIVATE).edit().putString("fav_ids", newFavs.toString()).apply();
+        } catch (Exception ignored) {}
+    }
+
+    private void addRoomListItem(LinearLayout parent, String name, String rid, String pwd, String icon, int idx, JSONArray rooms) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setPadding(12, 10, 12, 10);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
+        TextView tv = new TextView(this);
+        tv.setText(icon + " " + name + " (" + rid + ")" + pwd);
+        tv.setTextSize(15);
+        tv.setTextColor(0xFF333333);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        tv.setLayoutParams(lp);
+        row.addView(tv);
+
+        Button btn = new Button(this);
+        if (idx >= 0 && rooms != null) {
+            btn.setText(R.string.manage_room_title_simple);
+            btn.setOnClickListener(v -> {
+                try { showManageRoomDialog(rooms.getJSONObject(idx)); } catch (Exception ignored) {}
+            });
+        } else {
+            btn.setText(R.string.room_join);
+            btn.setOnClickListener(v -> {
+                String savedPwd = getSharedPreferences("boss_room_pwds", MODE_PRIVATE).getString(rid, "");
+                dataManager.joinRoom(rid, savedPwd, new DataManager.Callback<String>() {
+                    @Override public void onResult(String result) {
+                        if (!savedPwd.isEmpty()) {
+                            getSharedPreferences("boss_room_pwds", MODE_PRIVATE).edit().putString(rid, savedPwd).apply();
+                        }
+                        updateRoomStatusDisplay();
+                        adapter.updateData(dataManager.getAllBosses());
+                        if (myRoomsDialog != null) myRoomsDialog.dismiss();
+                    }
+                    @Override public void onError(String error) {
+                        removeFavIfNeeded(rid, error);
+                        if (error.contains("wrong password")) {
+                            showMainPwdInput(rid, name, parent);
+                        } else {
+                            showRoomError(error);
+                        }
+                    }
+                });
+            });
+        }
+        btn.setTextSize(12);
+        btn.setMinWidth(0);
+        btn.setPadding(12, 4, 12, 4);
+        row.addView(btn);
+
+        if (idx >= 0 && rooms != null) {
+            Button joinBtn = new Button(this);
+            joinBtn.setText(R.string.room_join);
+            joinBtn.setOnClickListener(v -> {
+                String savedPwd = getSharedPreferences("boss_room_pwds", MODE_PRIVATE).getString(rid, "");
+                dataManager.joinRoom(rid, savedPwd, new DataManager.Callback<String>() {
+                    @Override public void onResult(String result) {
+                        if (!savedPwd.isEmpty()) {
+                            getSharedPreferences("boss_room_pwds", MODE_PRIVATE).edit().putString(rid, savedPwd).apply();
+                        }
+                        updateRoomStatusDisplay();
+                        adapter.updateData(dataManager.getAllBosses());
+                        if (myRoomsDialog != null) myRoomsDialog.dismiss();
+                    }
+                    @Override public void onError(String error) { showRoomError(error); }
+                });
+            });
+            joinBtn.setTextSize(12);
+            joinBtn.setMinWidth(0);
+            joinBtn.setPadding(12, 4, 12, 4);
+            row.addView(joinBtn);
+        }
+        parent.addView(row);
+
+        View div = new View(this);
+        div.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        div.setBackgroundColor(0xFFD0D0D0);
+        parent.addView(div);
+    }
+
+    private AlertDialog myRoomsDialog;
+
     private void showMyRoomsDialog() {
+        if (!getSharedPreferences(PREFS_AUTH, MODE_PRIVATE).getBoolean(KEY_AUTHED, false)) return;
         dataManager.fetchMyRooms(new DataManager.Callback<String>() {
             @Override public void onResult(String result) {
                 try {
                     JSONObject json = new JSONObject(result);
                     JSONArray rooms = json.optJSONArray("rooms");
-                    if (rooms == null || rooms.length() == 0) {
+                    JSONArray favs = new JSONArray(dataManager.getFavoritesJson());
+                    if ((rooms == null || rooms.length() == 0) && favs.length() == 0) {
                         Toast.makeText(MainActivity.this, R.string.my_rooms_empty, Toast.LENGTH_SHORT).show();
                         return;
                     }
@@ -301,73 +502,34 @@ public class MainActivity extends AppCompatActivity {
                     listLayout.setOrientation(LinearLayout.VERTICAL);
                     listLayout.setPadding(0, 8, 0, 8);
 
-                    for (int i = 0; i < rooms.length(); i++) {
-                        JSONObject r = rooms.getJSONObject(i);
-                        String pwd = r.optBoolean("hasPassword", false) ? getString(R.string.room_has_password) : "";
-
-                        LinearLayout row = new LinearLayout(MainActivity.this);
-                        row.setOrientation(LinearLayout.HORIZONTAL);
-                        row.setPadding(12, 10, 12, 10);
-                        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-
-                        TextView nameTv = new TextView(MainActivity.this);
-                        nameTv.setText(r.optString("roomName") + " (" + r.optString("roomId") + ")" + pwd);
-                        nameTv.setTextSize(15);
-                        nameTv.setTextColor(0xFF333333);
-                        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-                        nameTv.setLayoutParams(lp);
-
-                        int idx = i;
-                        nameTv.setOnClickListener(v -> {
-                            try {
-                                JSONObject sel = rooms.getJSONObject(idx);
-                                showManageRoomDialog(sel);
-                            } catch (Exception ignored) {}
-                        });
-                        row.addView(nameTv);
-
-                        Button joinBtn = new Button(MainActivity.this);
-                        joinBtn.setText(R.string.room_join);
-                        joinBtn.setTextSize(12);
-                        joinBtn.setMinWidth(0);
-                        joinBtn.setPadding(12, 4, 12, 4);
-                        joinBtn.setOnClickListener(v -> {
-                            try {
-                                JSONObject sel = rooms.getJSONObject(idx);
-                                String rid = sel.optString("roomId");
-                                dataManager.joinRoom(rid, "", new DataManager.Callback<String>() {
-                                    @Override public void onResult(String result) {
-                                        updateRoomStatusDisplay();
-                                        adapter.updateData(dataManager.getAllBosses());
-                                    }
-                                    @Override public void onError(String error) {
-                                        showRoomError(error);
-                                    }
-                                });
-                            } catch (Exception ignored) {}
-                        });
-                        row.addView(joinBtn);
-
-                        listLayout.addView(row);
-
-                        if (i < rooms.length() - 1) {
-                            View divider = new View(MainActivity.this);
-                            divider.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1));
-                            divider.setBackgroundColor(0xFFD0D0D0);
-                            listLayout.addView(divider);
+                    java.util.Set<String> myIds = new java.util.HashSet<>();
+                    if (rooms != null) {
+                        for (int i = 0; i < rooms.length(); i++) {
+                            JSONObject r = rooms.getJSONObject(i);
+                            myIds.add(r.optString("roomId"));
+                            String pwd = r.optBoolean("hasPassword", false) ? getString(R.string.room_has_password) : "";
+                            addRoomListItem(listLayout, r.optString("roomName"), r.optString("roomId"), pwd, "◆", i, rooms);
+                        }
+                    }
+                    for (int i = 0; i < favs.length(); i++) {
+                        JSONObject f = favs.getJSONObject(i);
+                        String fid = f.optString("roomId");
+                        if (!myIds.contains(fid)) {
+                            addRoomListItem(listLayout, f.optString("roomName"), fid, "", "★", -1, null);
                         }
                     }
 
-                    new AlertDialog.Builder(MainActivity.this)
+                    myRoomsDialog = new AlertDialog.Builder(MainActivity.this)
                             .setTitle(R.string.my_rooms_title)
                             .setView(listLayout)
-                            .show();
+                            .create();
+                    myRoomsDialog.show();
                 } catch (Exception e) {
                     Toast.makeText(MainActivity.this, R.string.room_error, Toast.LENGTH_SHORT).show();
                 }
             }
             @Override public void onError(String error) {
-                Toast.makeText(MainActivity.this, getString(R.string.room_error, error), Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, R.string.my_rooms_empty, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -400,6 +562,7 @@ public class MainActivity extends AppCompatActivity {
             if (newPwd.isEmpty()) newPwd = null;
             dataManager.updateRoomInfo(roomId, newName, newPwd, new DataManager.Callback<Boolean>() {
                 @Override public void onResult(Boolean ok) {
+                    updateRoomStatusDisplay();
                     Toast.makeText(MainActivity.this, R.string.edit_time_success, Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
                 }
@@ -430,42 +593,59 @@ public class MainActivity extends AppCompatActivity {
                     .show();
         });
 
-        membersBtn.setOnClickListener(w -> {
-            dataManager.fetchRoomMembers(roomId, new DataManager.Callback<String>() {
-                @Override public void onResult(String result) {
-                    try {
-                        JSONObject json = new JSONObject(result);
-                        JSONArray members = json.optJSONArray("members");
-                        if (members == null || members.length() == 0) return;
-                        String[] items = new String[members.length()];
-                        for (int i = 0; i < members.length(); i++) {
-                            JSONObject m = members.getJSONObject(i);
-                            String role = m.optString("role");
-                            String roleDisplay;
-                            switch (role) {
-                                case "owner": roleDisplay = getString(R.string.role_owner); break;
-                                case "admin": roleDisplay = getString(R.string.role_admin); break;
-                                default: roleDisplay = getString(R.string.role_member); break;
-                            }
-                            items[i] = m.optString("name") + " - " + roleDisplay;
-                        }
-                        final JSONArray mems = members;
-                        new AlertDialog.Builder(MainActivity.this)
-                                .setTitle(R.string.manage_room_members_title)
-                                .setItems(items, (dd, idx) -> {
-                                    try {
-                                        JSONObject mem = mems.getJSONObject(idx);
-                                        showEditMemberDialog(roomId, mem);
-                                    } catch (Exception ignored) {}
-                                })
-                                .show();
-                    } catch (Exception ignored) {}
-                }
-                @Override public void onError(String error) {}
-            });
-        });
+        membersBtn.setOnClickListener(w -> showMemberList(roomId));
 
         dialog.show();
+    }
+
+    private void showMemberList(String roomId) {
+        dataManager.fetchRoomMembers(roomId, new DataManager.Callback<String>() {
+            @Override public void onResult(String result) {
+                try {
+                    JSONObject json = new JSONObject(result);
+                    JSONArray members = json.optJSONArray("members");
+                    if (members == null || members.length() == 0) return;
+
+                    LinearLayout listLayout = new LinearLayout(MainActivity.this);
+                    listLayout.setOrientation(LinearLayout.VERTICAL);
+                    listLayout.setPadding(0, 8, 0, 8);
+
+                    for (int i = 0; i < members.length(); i++) {
+                        JSONObject m = members.getJSONObject(i);
+                        String role = m.optString("role");
+                        String roleDisplay;
+                        switch (role) {
+                            case "owner": roleDisplay = getString(R.string.role_owner); break;
+                            case "super_admin": roleDisplay = getString(R.string.role_super_admin); break;
+                            case "admin": roleDisplay = getString(R.string.role_admin); break;
+                            default: roleDisplay = getString(R.string.role_member); break;
+                        }
+                        TextView tv = new TextView(MainActivity.this);
+                        tv.setText(m.optString("name") + " - " + roleDisplay);
+                        tv.setTextSize(16);
+                        tv.setPadding(16, 12, 16, 12);
+                        int idx = i;
+                        tv.setOnClickListener(v -> {
+                            try { showEditMemberDialog(roomId, members.getJSONObject(idx)); } catch (Exception ignored) {}
+                        });
+                        listLayout.addView(tv);
+
+                        View div = new View(MainActivity.this);
+                        div.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1));
+                        div.setBackgroundColor(0xFFD0D0D0);
+                        listLayout.addView(div);
+                    }
+
+                    AlertDialog memberDialog = new AlertDialog.Builder(MainActivity.this)
+                            .setTitle(R.string.manage_room_members_title)
+                            .setView(listLayout)
+                            .setPositiveButton("🔄", (d, w) -> { d.dismiss(); showMemberList(roomId); })
+                            .create();
+                    memberDialog.show();
+                } catch (Exception ignored) {}
+            }
+            @Override public void onError(String error) {}
+        });
     }
 
     private void showEditMemberDialog(String roomId, JSONObject member) {
@@ -473,13 +653,13 @@ public class MainActivity extends AppCompatActivity {
         String name = member.optString("name");
         String currentRole = member.optString("role");
 
-        String[] roles = {getString(R.string.role_owner), getString(R.string.role_admin), getString(R.string.role_member)};
-        int sel = "owner".equals(currentRole) ? 0 : "admin".equals(currentRole) ? 1 : 2;
+        String[] roles = {getString(R.string.role_super_admin), getString(R.string.role_admin), getString(R.string.role_member)};
+        int sel = "super_admin".equals(currentRole) ? 0 : "admin".equals(currentRole) ? 1 : 2;
 
         new AlertDialog.Builder(this)
                 .setTitle(getString(R.string.edit_member_title, name))
                 .setSingleChoiceItems(roles, sel, (d, which) -> {
-                    String[] enRoles = {"owner", "admin", "member"};
+                    String[] enRoles = {"super_admin", "admin", "member"};
                     String newRole = enRoles[which];
                     dataManager.updateMemberRole(roomId, targetUserId, newRole, null, new DataManager.Callback<Boolean>() {
                         @Override public void onResult(Boolean ok) {
@@ -497,6 +677,7 @@ public class MainActivity extends AppCompatActivity {
     private String getRoleDisplay(String role) {
         switch (role) {
             case "owner": return getString(R.string.role_owner);
+            case "super_admin": return getString(R.string.role_super_admin);
             case "admin": return getString(R.string.role_admin);
             default: return getString(R.string.role_member);
         }
@@ -507,28 +688,39 @@ public class MainActivity extends AppCompatActivity {
             leaveRoomButton.setVisibility(View.VISIBLE);
             if (dataManager.isShowingSharedData()) {
                 roomButton.setText(R.string.float_button_local);
-                sharedHeader.setText(getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole())));
+                addButton.setVisibility(dataManager.canAdd() ? View.VISIBLE : View.GONE);
+                headerText.setText(getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole())));
+                headerFavIcon.setText(isRoomFav() ? "★" : "☆");
+                headerFavIcon.setVisibility(View.VISIBLE);
+                headerFavText.setVisibility(View.VISIBLE);
                 sharedHeader.setVisibility(View.VISIBLE);
                 sharedHeader.setBackgroundColor(0xFF3F51B5);
-                sharedHeader.setTextColor(0xFFFFFFFF);
+                headerText.setTextColor(0xFFFFFFFF);
             } else {
                 roomButton.setText(R.string.room_button);
-                sharedHeader.setText(R.string.mode_local);
+                addButton.setVisibility(View.VISIBLE);
+                headerText.setText(R.string.mode_local);
+                headerText.setTextColor(0xFF333333);
+                headerFavIcon.setVisibility(View.GONE);
+                headerFavText.setVisibility(View.GONE);
                 sharedHeader.setVisibility(View.VISIBLE);
                 sharedHeader.setBackgroundColor(0xFFF0F0F0);
-                sharedHeader.setTextColor(0xFF333333);
             }
         } else {
             roomButton.setText(R.string.room_button);
             leaveRoomButton.setVisibility(View.GONE);
-            sharedHeader.setText(R.string.mode_local);
+            addButton.setVisibility(View.VISIBLE);
+            headerText.setText(R.string.mode_local);
+            headerText.setTextColor(0xFF333333);
+            headerFavIcon.setVisibility(View.GONE);
+            headerFavText.setVisibility(View.GONE);
             sharedHeader.setVisibility(View.VISIBLE);
             sharedHeader.setBackgroundColor(0xFFF0F0F0);
-            sharedHeader.setTextColor(0xFF333333);
         }
     }
 
     private void showRoomDialog() {
+        if (!checkAuth()) return;
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_room, null);
         EditText roomIdInput = dialogView.findViewById(R.id.room_id_input);
         EditText passwordInput = dialogView.findViewById(R.id.room_password_input);
@@ -574,7 +766,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 @Override
                 public void onError(String error) {
-                    Toast.makeText(MainActivity.this, getString(R.string.room_error, error), Toast.LENGTH_LONG).show();
+                    showRoomError(error);
                 }
             });
         });
@@ -598,6 +790,9 @@ public class MainActivity extends AppCompatActivity {
             dataManager.joinRoom(roomId, password, new DataManager.Callback<String>() {
                 @Override
                 public void onResult(String result) {
+                    if (password != null && !password.isEmpty()) {
+                        getSharedPreferences("boss_room_pwds", MODE_PRIVATE).edit().putString(roomId, password).apply();
+                    }
                     updateRoomStatusDisplay();
                     adapter.updateData(dataManager.getAllBosses());
                 }
@@ -748,6 +943,10 @@ public class MainActivity extends AppCompatActivity {
                 .setNegativeButton(R.string.dialog_button_cancel, null)
                 .create();
         dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
     }
 
     // 完整编辑对话框
