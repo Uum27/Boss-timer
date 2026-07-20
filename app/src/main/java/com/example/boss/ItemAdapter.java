@@ -40,6 +40,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     public String filteredString = "";
     private boolean hadRefreshedDay;
     private OnRowClickListener rowClickListener;
+    private boolean showResetButton = false;
 
     public ItemAdapter(Context context) {
         this.context = context;
@@ -217,6 +218,15 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         this.rowClickListener = listener;
     }
 
+    public void setShowResetButton(boolean show) {
+        this.showResetButton = show;
+        notifyDataSetChanged();
+    }
+
+    public boolean isShowResetButton() {
+        return showResetButton;
+    }
+
     public void addRow(RowData data) {
         dataList.add(0, data);
         notifyItemInserted(0);
@@ -291,11 +301,11 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
 
         if (dataManager.isShowingSharedData()) {
             holder.editButton.setVisibility(dataManager.canEdit() ? View.VISIBLE : View.INVISIBLE);
-            holder.resetButton.setVisibility(dataManager.canReset() ? View.VISIBLE : View.INVISIBLE);
+            holder.resetButton.setVisibility(showResetButton && dataManager.canReset() ? View.VISIBLE : View.INVISIBLE);
             holder.deleteButton.setVisibility(dataManager.canDelete() ? View.VISIBLE : View.INVISIBLE);
         } else {
             holder.editButton.setVisibility(View.VISIBLE);
-            holder.resetButton.setVisibility(View.VISIBLE);
+            holder.resetButton.setVisibility(showResetButton ? View.VISIBLE : View.INVISIBLE);
             holder.deleteButton.setVisibility(View.VISIBLE);
         }
 

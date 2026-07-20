@@ -188,6 +188,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        TextView headerReset = findViewById(R.id.header_reset);
+        headerReset.setOnClickListener(v -> {
+            boolean show = !adapter.isShowResetButton();
+            adapter.setShowResetButton(show);
+            headerReset.setTextColor(show ? 0xFF2196F3 : 0xFF333333);
+        });
+
         addButton.setOnClickListener(v -> showInputDialog());
 
         Intent bossServiceIntent = new Intent(this, TimerService.class);
@@ -1409,7 +1416,6 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     data.isNotified = false;
-                    data.autoReset = false;
                     data.setSpawnTime(this);
                     long remaining = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
                     if (remaining < 0) remaining = 0;

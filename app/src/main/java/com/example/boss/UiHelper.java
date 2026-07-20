@@ -101,7 +101,7 @@ public class UiHelper {
                         tx.append("\n  ").append(ctx.getString(R.string.log_end_time)).append(": ").append(formatTime(ch.optLong("oldRefresh"))).append(" → ").append(formatTime(ch.optLong("newRefresh")));
                         long sp = ch.optLong("spawn",0); if (sp>0) tx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(sp));
                     } else if ("name".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_name)).append(": ").append(ch.optString("old")).append(" → ").append(ch.optString("new"));
-                    else if ("notifyTime".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_notify)).append(": ").append(ch.optLong("old")).append("s → ").append(ch.optLong("new")).append("s");
+                    else if ("notifyTime".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_notify)).append(": ").append(formatSeconds(ch.optLong("old"))).append(" → ").append(formatSeconds(ch.optLong("new")));
                     else if ("autoReset".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_auto_reset)).append(": ").append(ch.optBoolean("old")?ctx.getString(R.string.yes):ctx.getString(R.string.no)).append(" → ").append(ch.optBoolean("new")?ctx.getString(R.string.yes):ctx.getString(R.string.no));
                     else if ("spawn".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(ch.optLong("old"))).append(" → ").append(formatSeconds(ch.optLong("new")));
                 }

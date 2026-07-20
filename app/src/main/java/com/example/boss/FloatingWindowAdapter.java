@@ -42,6 +42,9 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
     private ItemAdapter.OnButtonClickListener buttonClickListener;
     private RecyclerView recyclerView;
     private boolean hadRefreshedDay;
+    private boolean resetLocked = false;
+    private final Handler resetLockHandler = new Handler(Looper.getMainLooper());
+    private Runnable resetLockRunnable;
 
     public FloatingWindowAdapter(List<RowData> dataList, Context context) {
         this.context = context;
@@ -206,15 +209,33 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
         holder.text3.setSelected(true);
 
         holder.btnReset.setOnClickListener(v -> {
+            if (resetLocked) return;
             if (buttonClickListener != null) {
                 buttonClickListener.onButtonClick(position, ItemAdapter.ButtonType.RESET);
             }
+            resetLocked = true;
+            notifyDataSetChanged();
+            resetLockHandler.removeCallbacks(resetLockRunnable);
+            resetLockRunnable = () -> {
+                resetLocked = false;
+                notifyDataSetChanged();
+            };
+            resetLockHandler.postDelayed(resetLockRunnable, 3000);
         });
 
+        boolean isTopItem = (position == 0);
+        if (!isTopItem && position == 1 && dataList.size() > 1 && !resetLocked) {
+            long t0 = dataList.get(0).startTime + dataList.get(0).spawnTime * 1000L;
+            long t1 = dataList.get(1).startTime + dataList.get(1).spawnTime * 1000L;
+            if (Math.abs(t1 - t0) / 1000 <= 180) {
+                isTopItem = true;
+            }
+        }
+        boolean canShow = !resetLocked && isTopItem;
         if (dataManager.isShowingSharedData()) {
-            holder.btnReset.setVisibility(dataManager.canReset() ? View.VISIBLE : View.INVISIBLE);
+            holder.btnReset.setVisibility(canShow && dataManager.canReset() ? View.VISIBLE : View.INVISIBLE);
         } else {
-            holder.btnReset.setVisibility(View.VISIBLE);
+            holder.btnReset.setVisibility(canShow ? View.VISIBLE : View.INVISIBLE);
         }
 
         long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
@@ -300,6 +321,9 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
     public void stopTimer() {
         if (handler != null) {
             handler.removeCallbacksAndMessages(null);
+        }
+        if (resetLockHandler != null) {
+            resetLockHandler.removeCallbacks(resetLockRunnable);
         }
     }
 

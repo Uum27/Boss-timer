@@ -252,6 +252,7 @@ public class FloatingWindowService extends Service {
         updateFloatingWindowTexts();
         recreateAdapter();
         updateModeIndicator();
+        showingLogs = false;
         if (roomInfoBar != null && roomInfoBar.getVisibility() == View.VISIBLE) {
             roomInfoBar.setVisibility(View.GONE);
         }
@@ -292,6 +293,9 @@ public class FloatingWindowService extends Service {
 
         TextView leaveBtn = floatingView.findViewById(R.id.btn_leave_room);
         if (leaveBtn != null) leaveBtn.setText(c.getString(R.string.room_leave));
+
+        TextView logsBtn = floatingView.findViewById(R.id.btn_logs);
+        if (logsBtn != null) logsBtn.setText(c.getString(R.string.logs_button));
 
         Button joinConfirm = floatingView.findViewById(R.id.btn_join_confirm);
         if (joinConfirm != null) joinConfirm.setText(c.getString(R.string.join_room_btn));
@@ -716,6 +720,48 @@ public class FloatingWindowService extends Service {
         });
     }
 
+    private void updateRoomInfoDisplay() {
+        boolean canSeeLogs = dataManager.isOwner() || "admin".equals(dataManager.getMyRole());
+        floatingView.findViewById(R.id.btn_logs).setVisibility(canSeeLogs ? View.VISIBLE : View.GONE);
+        floatingView.findViewById(R.id.btn_leave_room).setVisibility(View.VISIBLE);
+        Context c = getLocalizedContext();
+        String roleText;
+        switch (dataManager.getMyRole()) {
+            case "owner": roleText = c.getString(R.string.role_owner); break;
+            case "super_admin": roleText = c.getString(R.string.role_super_admin); break;
+            case "admin": roleText = c.getString(R.string.role_admin); break;
+            default: roleText = c.getString(R.string.role_member); break;
+        }
+        StringBuilder info = new StringBuilder();
+        info.append(c.getString(R.string.room_info_prefix)).append(dataManager.getCurrentRoomId())
+            .append(" · ").append(roleText)
+            .append("\n").append(c.getString(R.string.room_version_label)).append(dataManager.getCurrentRoomVersion());
+        roomInfoText.setText(info.toString());
+        roomInfoText.setMaxLines(3);
+
+        if (dataManager.isOwner()) {
+            dataManager.fetchRoomPassword(new DataManager.Callback<String>() {
+                @Override public void onResult(String result) {
+                    try {
+                        JSONObject json = new JSONObject(result);
+                        String pwdInfo;
+                        if (json.optBoolean("hasPassword", false)) {
+                            String pwd = json.optString("password", "");
+                            pwdInfo = " | " + c.getString(R.string.room_password_label) + (pwd.isEmpty() ? "******" : pwd);
+                        } else {
+                            pwdInfo = " | " + c.getString(R.string.room_no_password);
+                        }
+                        String text = info.toString();
+                        String[] lines = text.split("\n");
+                        lines[1] = lines[1] + pwdInfo;
+                        roomInfoText.setText(lines[0] + "\n" + lines[1]);
+                    } catch (Exception e) {}
+                }
+                @Override public void onError(String error) {}
+            });
+        }
+    }
+
     private void toggleRoomInfo() {
         if (!dataManager.isSharedMode()) {
             showMyRoomsInFloat();
@@ -725,46 +771,17 @@ public class FloatingWindowService extends Service {
         if (roomInfoBar.getVisibility() == View.VISIBLE) {
             showingLogs = false;
             roomInfoBar.setVisibility(View.GONE);
+            roomListPanel.setVisibility(View.GONE);
+            floatingRecyclerView.setVisibility(View.VISIBLE);
         } else {
-            floatingView.findViewById(R.id.btn_leave_room).setVisibility(View.VISIBLE);
-            boolean canSeeLogs = dataManager.isOwner() || "admin".equals(dataManager.getMyRole());
-            floatingView.findViewById(R.id.btn_logs).setVisibility(canSeeLogs ? View.VISIBLE : View.GONE);
-            Context c = getLocalizedContext();
-            String roleText;
-            switch (dataManager.getMyRole()) {
-                case "owner": roleText = c.getString(R.string.role_owner); break;
-                case "super_admin": roleText = c.getString(R.string.role_super_admin); break;
-                case "admin": roleText = c.getString(R.string.role_admin); break;
-                default: roleText = c.getString(R.string.role_member); break;
+            if (showingLogs) {
+                showingLogs = false;
+                roomListPanel.setVisibility(View.GONE);
+                floatingRecyclerView.setVisibility(View.VISIBLE);
+                return;
             }
-            StringBuilder info = new StringBuilder();
-            info.append(c.getString(R.string.room_info_prefix)).append(dataManager.getCurrentRoomId())
-                .append(" · ").append(roleText)
-                .append("\n").append(c.getString(R.string.room_version_label)).append(dataManager.getCurrentRoomVersion());
-            roomInfoText.setText(info.toString());
+            updateRoomInfoDisplay();
             roomInfoBar.setVisibility(View.VISIBLE);
-
-            if (dataManager.isOwner()) {
-                dataManager.fetchRoomPassword(new DataManager.Callback<String>() {
-                    @Override public void onResult(String result) {
-                        try {
-                            JSONObject json = new JSONObject(result);
-                            String pwdInfo;
-                            if (json.optBoolean("hasPassword", false)) {
-                                String pwd = json.optString("password", "");
-                                pwdInfo = " | " + c.getString(R.string.room_password_label) + (pwd.isEmpty() ? "******" : pwd);
-                            } else {
-                                pwdInfo = " | " + c.getString(R.string.room_no_password);
-                            }
-                            String text = info.toString();
-                            String[] lines = text.split("\n");
-                            lines[1] = lines[1] + pwdInfo;
-                            roomInfoText.setText(lines[0] + "\n" + lines[1]);
-                        } catch (Exception e) {}
-                    }
-                    @Override public void onError(String error) {}
-                });
-            }
         }
     }
 
@@ -1255,43 +1272,67 @@ public class FloatingWindowService extends Service {
     private boolean showingLogs = false;
 
     private void showRoomLogs() {
-        if (roomInfoBar == null || roomInfoText == null) return;
+        if (roomListPanel == null) return;
         if (!dataManager.isOwner() && !"admin".equals(dataManager.getMyRole())) return;
         if (showingLogs) {
             showingLogs = false;
-            roomInfoBar.setVisibility(View.GONE);
+            roomListPanel.setVisibility(View.GONE);
             return;
         }
+        Context c = getLocalizedContext();
         dataManager.fetchLogs(dataManager.getCurrentRoomId(), new DataManager.Callback<String>() {
             @Override public void onResult(String result) {
                 try {
                     JSONArray logs = new JSONObject(result).optJSONArray("logs");
+                    LinearLayout panel = (LinearLayout) roomListPanel;
+                    panel.removeAllViews();
                     if (logs == null || logs.length() == 0) return;
-                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault());
-                    StringBuilder sb = new StringBuilder();
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd | HH:mm", java.util.Locale.getDefault());
                     for (int i = 0; i < Math.min(2, logs.length()); i++) {
                         JSONObject l = logs.getJSONObject(i); String a = l.optString("action");
-                        String lb = "add".equals(a)?getString(R.string.log_add):"delete".equals(a)?getString(R.string.log_delete):"kick".equals(a)?getString(R.string.log_kick):getString(R.string.log_edit);
+                        String lb = "add".equals(a)?c.getString(R.string.log_add):"delete".equals(a)?c.getString(R.string.log_delete):"kick".equals(a)?c.getString(R.string.log_kick):"edit".equals(a)?c.getString(R.string.log_edit):"join".equals(a)?c.getString(R.string.log_join):c.getString(R.string.log_edit);
                         StringBuilder tx = new StringBuilder();
-                        tx.append(sdf.format(new java.util.Date(l.optLong("time")))).append(" ").append(l.optString("userName")).append(" | ").append(l.optString("target")).append("【").append(lb).append("】");
+                        tx.append(sdf.format(new java.util.Date(l.optLong("time")))).append(" | ").append(l.optString("userName")).append(" | ").append(l.optString("target")).append("【").append(lb).append("】");
                         JSONArray chs = l.optJSONArray("changes");
-                        if (chs != null) for (int c=0; c<chs.length(); c++) {
-                            JSONObject ch = chs.getJSONObject(c); String f = ch.optString("field");
-                            if ("startTime".equals(f)) tx.append("\n结束:").append(formatFloatTime(ch.optLong("oldRefresh"))).append("→").append(formatFloatTime(ch.optLong("newRefresh")));
-                            else if ("name".equals(f)) tx.append("\n名称:").append(ch.optString("old")).append("→").append(ch.optString("new"));
+                        if (chs != null) for (int ct=0; ct<chs.length(); ct++) {
+                            JSONObject ch = chs.getJSONObject(ct); String f = ch.optString("field");
+                            if ("startTime".equals(f)) {
+                                tx.append("\n").append(c.getString(R.string.log_end_time)).append(":").append(formatFloatTime(ch.optLong("oldRefresh"))).append("→").append(formatFloatTime(ch.optLong("newRefresh")));
+                                long sp = ch.optLong("spawn", 0);
+                                if (sp > 0) tx.append("\n").append(c.getString(R.string.log_reset_time)).append(":").append(formatSeconds(sp));
+                            } else if ("name".equals(f)) {
+                                tx.append("\n").append(c.getString(R.string.log_name)).append(":").append(ch.optString("old")).append("→").append(ch.optString("new"));
+                            } else if ("spawn".equals(f)) {
+                                tx.append("\n").append(c.getString(R.string.log_reset_time)).append(":").append(formatSeconds(ch.optLong("old"))).append("→").append(formatSeconds(ch.optLong("new")));
+                            } else if ("autoReset".equals(f)) {
+                                tx.append("\n").append(c.getString(R.string.log_auto_reset)).append(":").append(ch.optBoolean("old")?c.getString(R.string.yes):c.getString(R.string.no)).append("→").append(ch.optBoolean("new")?c.getString(R.string.yes):c.getString(R.string.no));
+                            }
                         }
-                        sb.append(tx.toString());
-                        if (i == 0) sb.append("\n");
+                        if ("add".equals(a)) {
+                            long rt = l.optLong("refreshTime", 0); if (rt > 0) tx.append("\n").append(c.getString(R.string.log_end_time)).append(":").append(formatFloatTime(rt));
+                            long sp = l.optLong("spawn", 0); if (sp > 0) tx.append("\n").append(c.getString(R.string.log_reset_time)).append(":").append(formatSeconds(sp));
+                        }
+                        if ("delete".equals(a)) {
+                            long rt = l.optLong("refreshTime", 0); if (rt > 0) tx.append("\n").append(c.getString(R.string.log_end_time)).append(":").append(formatFloatTime(rt));
+                            long sp = l.optLong("spawn", 0); if (sp > 0) tx.append("\n").append(c.getString(R.string.log_reset_time)).append(":").append(formatSeconds(sp));
+                        }
+                        TextView tv = new TextView(c);
+                        tv.setText(tx.toString()); tv.setTextSize(12); tv.setTextColor(0xFFFFFFFF); tv.setPadding(8,6,8,6);
+                        panel.addView(tv);
+                        View dv = new View(c);
+                        dv.setLayoutParams(new LinearLayout.LayoutParams(-1,1)); dv.setBackgroundColor(0x40FFFFFF); panel.addView(dv);
                     }
-                    roomInfoText.setText(sb.toString());
-                    floatingView.findViewById(R.id.btn_leave_room).setVisibility(View.GONE);
-                    floatingView.findViewById(R.id.btn_logs).setVisibility(View.GONE);
-                    roomInfoBar.setVisibility(View.VISIBLE);
+                    roomInfoBar.setVisibility(View.GONE);
+                    panel.setVisibility(View.VISIBLE);
                     showingLogs = true;
                 } catch(Exception e){}
             }
             @Override public void onError(String e){}
         });
+    }
+
+    private String formatSeconds(long s) {
+        return String.format(java.util.Locale.getDefault(), "%02d:%02d:%02d", Math.abs(s) / 3600, (Math.abs(s) / 60) % 60, Math.abs(s) % 60);
     }
 
     private String formatFloatTime(long millis) {

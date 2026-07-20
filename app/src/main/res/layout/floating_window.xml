@@ -151,51 +151,43 @@
         android:padding="8dp"
         android:visibility="gone">
 
-        <!-- 第一行：房间信息 | 居中日志 | 离开按钮 -->
+        <!-- 第一行：房间信息 -->
+        <TextView
+            android:id="@+id/room_info_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:maxLines="3"
+            android:ellipsize="end" />
+
+        <!-- 第二行：离开按钮 + 日志按钮 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
 
-            <!-- 左侧：房间信息（占据一半权重） -->
-            <TextView
-                android:id="@+id/room_info_text"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:maxLines="3"
-                android:ellipsize="end" />
-
-            <!-- 中间区域：日志按钮居中（占据一半权重） -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/btn_logs"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/logs_button"
-                    android:textSize="11sp"
-                    android:textColor="#FFD700"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp" />
-            </LinearLayout>
-
-            <!-- 右侧：离开按钮（包裹内容） -->
             <TextView
                 android:id="@+id/btn_leave_room"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:text="@string/room_leave"
                 android:textSize="11sp"
                 android:textColor="#FFAAAA"
-                android:paddingStart="10dp"
+                android:gravity="start"
+                android:paddingStart="4dp" />
+
+            <TextView
+                android:id="@+id/btn_logs"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/logs_button"
+                android:textSize="11sp"
+                android:textColor="#FFD700"
+                android:gravity="end"
                 android:paddingEnd="4dp" />
         </LinearLayout>
 
