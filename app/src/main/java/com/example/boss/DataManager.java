@@ -82,6 +82,24 @@ public class DataManager {
     public String getUserName() { return myUserName; }
     public boolean hasUserId() { return myUserId != null && !myUserId.isEmpty(); }
 
+    public String resolveErrorMessage(Context c, String error) {
+        if (error == null) return c.getString(R.string.error_network);
+        String e = error.toLowerCase();
+        if (e.contains("wrong password")) return c.getString(R.string.room_password_wrong);
+        if (e.contains("max_rooms_reached")) return c.getString(R.string.max_rooms_reached);
+        if (e.contains("higher_priority_locked")) return c.getString(R.string.higher_priority_locked);
+        if (e.contains("max_bosses_reached") || e.contains("need_expansion_code")) return c.getString(R.string.need_expansion_code);
+        if (e.contains("banned")) return c.getString(R.string.banned);
+        if (e.contains("room not found") || e.contains("not found")) return c.getString(R.string.room_not_found);
+        if (e.contains("password required") || e.contains("password")) return c.getString(R.string.room_password_wrong);
+        String stripped = error;
+        if (stripped.startsWith("HTTP ")) {
+            int idx = stripped.indexOf(": ");
+            if (idx > 0) stripped = stripped.substring(idx + 2);
+        }
+        return c.getString(R.string.room_error, stripped);
+    }
+
     public void saveUserIdentity(String userId, String userName) {
         this.myUserId = userId;
         this.myUserName = userName;
@@ -592,6 +610,11 @@ public class DataManager {
             j.put("needNotify", data.needNotify);
             j.put("autoReset", data.autoReset);
             j.put("showInFloat", data.showInFloat);
+            j.put("decreasingMode", data.decreasingMode);
+            j.put("decreasingSeconds", data.decreasingSeconds);
+            j.put("decreasingCount", data.decreasingCount);
+            j.put("deathCount", data.deathCount);
+            j.put("initialSpawnTime", data.initialSpawnTime);
             return j.toString();
         } catch (Exception e) { return "{}"; }
     }
@@ -608,6 +631,11 @@ public class DataManager {
             d.needNotify = j.optBoolean("needNotify", true);
             d.autoReset = j.optBoolean("autoReset", true);
             d.showInFloat = j.optBoolean("showInFloat", true);
+            d.decreasingMode = j.optBoolean("decreasingMode", false);
+            d.decreasingSeconds = j.optInt("decreasingSeconds", 0);
+            d.decreasingCount = j.optInt("decreasingCount", 0);
+            d.deathCount = j.optInt("deathCount", 0);
+            d.initialSpawnTime = j.optLong("initialSpawnTime", 0);
             d.roomId = currentRoomId;
             d.syncStatus = "synced";
         } catch (Exception e) { Log.e(TAG, "jsonToRowData", e); }

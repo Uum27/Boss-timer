@@ -12,7 +12,7 @@ import java.util.Locale;
 
 public class DBHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "boss.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
     public static final String TABLE_BOSS = "boss";
     public static final String COLUMN_ID = "id";
@@ -29,6 +29,11 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String COLUMN_ROOM_ID = "room_id";
     public static final String COLUMN_UPDATE_TIME = "update_time";
     public static final String COLUMN_SYNC_STATUS = "sync_status";
+    public static final String COLUMN_DECREASING_MODE = "decreasing_mode";
+    public static final String COLUMN_DECREASING_SECONDS = "decreasing_seconds";
+    public static final String COLUMN_DECREASING_COUNT = "decreasing_count";
+    public static final String COLUMN_DEATH_COUNT = "death_count";
+    public static final String COLUMN_INITIAL_SPAWN = "initial_spawn";
 
     public static final String TABLE_ROOM_INFO = "room_info";
     public static final String COLUMN_ROOM_INFO_ROOM_ID = "room_id";
@@ -50,7 +55,12 @@ public class DBHelper extends SQLiteOpenHelper {
                     + COLUMN_DOC_ID + " TEXT,"
                     + COLUMN_ROOM_ID + " TEXT,"
                     + COLUMN_UPDATE_TIME + " INTEGER DEFAULT 0,"
-                    + COLUMN_SYNC_STATUS + " TEXT DEFAULT 'synced')";
+                    + COLUMN_SYNC_STATUS + " TEXT DEFAULT 'synced',"
+                    + COLUMN_DECREASING_MODE + " INTEGER DEFAULT 0,"
+                    + COLUMN_DECREASING_SECONDS + " INTEGER DEFAULT 0,"
+                    + COLUMN_DECREASING_COUNT + " INTEGER DEFAULT 0,"
+                    + COLUMN_DEATH_COUNT + " INTEGER DEFAULT 0,"
+                    + COLUMN_INITIAL_SPAWN + " INTEGER DEFAULT 0)";
 
     private static final String CREATE_TABLE_ROOM_INFO =
             "CREATE TABLE " + TABLE_ROOM_INFO + "("
@@ -85,6 +95,13 @@ public class DBHelper extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE " + TABLE_BOSS + " ADD COLUMN " + COLUMN_SYNC_STATUS + " TEXT DEFAULT 'synced'");
             db.execSQL(CREATE_TABLE_ROOM_INFO);
         }
+        if (oldVersion < 3) {
+            db.execSQL("ALTER TABLE " + TABLE_BOSS + " ADD COLUMN " + COLUMN_DECREASING_MODE + " INTEGER DEFAULT 0");
+            db.execSQL("ALTER TABLE " + TABLE_BOSS + " ADD COLUMN " + COLUMN_DECREASING_SECONDS + " INTEGER DEFAULT 0");
+            db.execSQL("ALTER TABLE " + TABLE_BOSS + " ADD COLUMN " + COLUMN_DECREASING_COUNT + " INTEGER DEFAULT 0");
+            db.execSQL("ALTER TABLE " + TABLE_BOSS + " ADD COLUMN " + COLUMN_DEATH_COUNT + " INTEGER DEFAULT 0");
+            db.execSQL("ALTER TABLE " + TABLE_BOSS + " ADD COLUMN " + COLUMN_INITIAL_SPAWN + " INTEGER DEFAULT 0");
+        }
     }
 
     public long insertBoss(RowData data) {
@@ -103,6 +120,11 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put(COLUMN_ROOM_ID, data.roomId);
         values.put(COLUMN_UPDATE_TIME, data.updateTime);
         if (data.syncStatus != null) values.put(COLUMN_SYNC_STATUS, data.syncStatus);
+        values.put(COLUMN_DECREASING_MODE, data.decreasingMode ? 1 : 0);
+        values.put(COLUMN_DECREASING_SECONDS, data.decreasingSeconds);
+        values.put(COLUMN_DECREASING_COUNT, data.decreasingCount);
+        values.put(COLUMN_DEATH_COUNT, data.deathCount);
+        values.put(COLUMN_INITIAL_SPAWN, data.initialSpawnTime);
 
         long id = db.insert(TABLE_BOSS, null, values);
         db.close();
@@ -127,7 +149,12 @@ public class DBHelper extends SQLiteOpenHelper {
                 COLUMN_DOC_ID,
                 COLUMN_ROOM_ID,
                 COLUMN_UPDATE_TIME,
-                COLUMN_SYNC_STATUS
+                COLUMN_SYNC_STATUS,
+                COLUMN_DECREASING_MODE,
+                COLUMN_DECREASING_SECONDS,
+                COLUMN_DECREASING_COUNT,
+                COLUMN_DEATH_COUNT,
+                COLUMN_INITIAL_SPAWN
         };
 
         Cursor cursor = db.query(TABLE_BOSS, columns, null, null, null, null, COLUMN_ID + " ASC");
@@ -149,6 +176,11 @@ public class DBHelper extends SQLiteOpenHelper {
                 data.roomId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ROOM_ID));
                 data.updateTime = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_UPDATE_TIME));
                 data.syncStatus = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SYNC_STATUS));
+                data.decreasingMode = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DECREASING_MODE)) == 1;
+                data.decreasingSeconds = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DECREASING_SECONDS));
+                data.decreasingCount = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DECREASING_COUNT));
+                data.deathCount = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DEATH_COUNT));
+                data.initialSpawnTime = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_INITIAL_SPAWN));
                 // 注意：此方法用于数据库查看，不涉及多语言，所以不调用 setSpawnTime
                 bossList.add(data);
             } while (cursor.moveToNext());
@@ -187,6 +219,11 @@ public class DBHelper extends SQLiteOpenHelper {
             data.notifyTime = cursor.getLong(cursor.getColumnIndex(COLUMN_NOTIFY_TIME));
             data.autoReset = cursor.getInt(cursor.getColumnIndex(COLUMN_AUTO_RESET)) == 1;
             data.showInFloat = cursor.getInt(cursor.getColumnIndex(COLUMN_SHOW_IN_FLOAT)) == 1;
+            data.decreasingMode = cursor.getInt(cursor.getColumnIndex(COLUMN_DECREASING_MODE)) == 1;
+            data.decreasingSeconds = cursor.getInt(cursor.getColumnIndex(COLUMN_DECREASING_SECONDS));
+            data.decreasingCount = cursor.getInt(cursor.getColumnIndex(COLUMN_DECREASING_COUNT));
+            data.deathCount = cursor.getInt(cursor.getColumnIndex(COLUMN_DEATH_COUNT));
+            data.initialSpawnTime = cursor.getLong(cursor.getColumnIndex(COLUMN_INITIAL_SPAWN));
         }
 
         cursor.close();
@@ -248,6 +285,11 @@ public class DBHelper extends SQLiteOpenHelper {
         data.roomId = cursor.getString(cursor.getColumnIndex(COLUMN_ROOM_ID));
         data.updateTime = cursor.getLong(cursor.getColumnIndex(COLUMN_UPDATE_TIME));
         data.syncStatus = cursor.getString(cursor.getColumnIndex(COLUMN_SYNC_STATUS));
+        data.decreasingMode = cursor.getInt(cursor.getColumnIndex(COLUMN_DECREASING_MODE)) == 1;
+        data.decreasingSeconds = cursor.getInt(cursor.getColumnIndex(COLUMN_DECREASING_SECONDS));
+        data.decreasingCount = cursor.getInt(cursor.getColumnIndex(COLUMN_DECREASING_COUNT));
+        data.deathCount = cursor.getInt(cursor.getColumnIndex(COLUMN_DEATH_COUNT));
+        data.initialSpawnTime = cursor.getLong(cursor.getColumnIndex(COLUMN_INITIAL_SPAWN));
         return data;
     }
 
@@ -280,6 +322,11 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put(COLUMN_ROOM_ID, data.roomId);
         values.put(COLUMN_UPDATE_TIME, data.updateTime);
         if (data.syncStatus != null) values.put(COLUMN_SYNC_STATUS, data.syncStatus);
+        values.put(COLUMN_DECREASING_MODE, data.decreasingMode ? 1 : 0);
+        values.put(COLUMN_DECREASING_SECONDS, data.decreasingSeconds);
+        values.put(COLUMN_DECREASING_COUNT, data.decreasingCount);
+        values.put(COLUMN_DEATH_COUNT, data.deathCount);
+        values.put(COLUMN_INITIAL_SPAWN, data.initialSpawnTime);
         db.update(TABLE_BOSS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(id)});
     }
 

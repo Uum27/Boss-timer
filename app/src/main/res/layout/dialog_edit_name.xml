@@ -75,5 +75,39 @@
             android:gravity="center"
             android:hint="@string/input_second_hint"/>
     </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp">
+
+        <Button
+            android:id="@+id/btn_open_decrease"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/decrease_config"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tv_decrease_status"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:textSize="12sp"
+            android:textColor="#FF6600" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_restart_decrease"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/decrease_restart"
+        android:textSize="13sp"
+        android:layout_marginTop="4dp"
+        android:layout_gravity="end"
+        android:visibility="gone" />
     </LinearLayout>
 </ScrollView>

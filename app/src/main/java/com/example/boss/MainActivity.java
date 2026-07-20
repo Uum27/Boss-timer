@@ -387,21 +387,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showRoomError(String error) {
-        if (error.contains("wrong password")) {
-            Toast.makeText(this, R.string.room_password_wrong, Toast.LENGTH_SHORT).show();
-        } else if (error.contains("max_rooms_reached")) {
-            Toast.makeText(this, R.string.max_rooms_reached, Toast.LENGTH_SHORT).show();
-        } else if (error.contains("higher_priority_locked")) {
-            Toast.makeText(this, R.string.higher_priority_locked, Toast.LENGTH_SHORT).show();
-        } else if (error.contains("max_bosses_reached") || error.contains("need_expansion_code")) {
-            Toast.makeText(this, R.string.need_expansion_code, Toast.LENGTH_SHORT).show();
-        } else if (error.contains("banned")) {
-            Toast.makeText(this, R.string.banned, Toast.LENGTH_SHORT).show();
-        } else if (error.contains("room not found") || error.contains("not found")) {
-            Toast.makeText(this, R.string.room_not_found, Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, getString(R.string.room_error, error), Toast.LENGTH_LONG).show();
-        }
+        String msg = dataManager.resolveErrorMessage(this, error);
+        Toast.makeText(this, msg, error.contains("not found") ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG).show();
     }
 
     private void removeFavIfNeeded(String rid, String error) {
@@ -580,7 +567,7 @@ public class MainActivity extends AppCompatActivity {
                     dialog.dismiss();
                 }
                 @Override public void onError(String err) {
-                    Toast.makeText(MainActivity.this, getString(R.string.room_error, err), Toast.LENGTH_SHORT).show();
+                    showRoomError(err);
                 }
             });
         });
@@ -598,7 +585,7 @@ public class MainActivity extends AppCompatActivity {
                                 dialog.dismiss();
                             }
                             @Override public void onError(String err) {
-                                Toast.makeText(MainActivity.this, getString(R.string.room_error, err), Toast.LENGTH_SHORT).show();
+                                showRoomError(err);
                             }
                         });
                     })
@@ -671,7 +658,7 @@ public class MainActivity extends AppCompatActivity {
                                                     showMemberList(roomId);
                                                 }
                                                 @Override public void onError(String err) {
-                                                    Toast.makeText(MainActivity.this, getString(R.string.room_error, err), Toast.LENGTH_SHORT).show();
+                                                    showRoomError(err);
                                                 }
                                             });
                                         })
@@ -716,7 +703,7 @@ public class MainActivity extends AppCompatActivity {
     private void showEditMemberDialog(String roomId, JSONObject member) {
         String targetUserId = member.optString("userId");
         if (targetUserId.equals(dataManager.getUserId())) {
-            Toast.makeText(this, "不能修改自己的角色", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.cannot_edit_own_role, Toast.LENGTH_SHORT).show();
             return;
         }
         String name = member.optString("name");
@@ -736,7 +723,7 @@ public class MainActivity extends AppCompatActivity {
                             d.dismiss();
                         }
                         @Override public void onError(String err) {
-                            Toast.makeText(MainActivity.this, getString(R.string.room_error, err), Toast.LENGTH_SHORT).show();
+                            showRoomError(err);
                         }
                     });
                 })
@@ -1236,6 +1223,20 @@ public class MainActivity extends AppCompatActivity {
         EditText hourInput = dialogView.findViewById(R.id.edit_hour);
         EditText minuteInput = dialogView.findViewById(R.id.edit_minute);
         EditText secondInput = dialogView.findViewById(R.id.edit_second);
+        Button btnDecrease = dialogView.findViewById(R.id.btn_open_decrease);
+        Button btnRestart = dialogView.findViewById(R.id.btn_restart_decrease);
+        TextView tvDecreaseStatus = dialogView.findViewById(R.id.tv_decrease_status);
+
+        if (data.decreasingMode && data.deathCount < data.decreasingCount) {
+            tvDecreaseStatus.setText(String.format(getString(R.string.decrease_current), data.deathCount, data.decreasingCount));
+            btnRestart.setVisibility(View.VISIBLE);
+        } else if (data.decreasingMode) {
+            tvDecreaseStatus.setText(getString(R.string.decrease_mode) + " ✓");
+            btnRestart.setVisibility(View.VISIBLE);
+        } else {
+            tvDecreaseStatus.setText("");
+            btnRestart.setVisibility(View.GONE);
+        }
 
         // 预填当前名称
         nameInput.setText(data.text1);
@@ -1306,6 +1307,20 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .setNegativeButton(R.string.dialog_button_cancel, null)
                 .create();
+        dialogView.setTag(dialog);
+        btnDecrease.setOnClickListener(v -> {
+            showDecreaseDialog(adapter, position);
+            ((AlertDialog) dialogView.getTag()).dismiss();
+        });
+        btnRestart.setOnClickListener(v -> {
+            data.deathCount = 0;
+            if (data.initialSpawnTime > 0) data.spawnTime = data.initialSpawnTime;
+            data.initialSpawnTime = 0;
+            dbHelper.editBoss(data);
+            adapter.notifyItemChanged(position);
+            EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, position));
+            ((AlertDialog) dialogView.getTag()).dismiss();
+        });
         dialog.show();
 
         Window window = dialog.getWindow();
@@ -1645,5 +1660,100 @@ public class MainActivity extends AppCompatActivity {
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
         }
+    }
+
+    private void showDecreaseDialog(ItemAdapter adapter, int position) {
+        RowData data = adapter.dataList.get(position);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(32, 16, 32, 16);
+
+        CheckBox enableCb = new CheckBox(this);
+        enableCb.setText(getString(R.string.decrease_mode));
+        enableCb.setChecked(data.decreasingMode);
+        enableCb.setTextSize(16);
+        root.addView(enableCb);
+
+        TextView timeLabel = new TextView(this);
+        timeLabel.setText(getString(R.string.decrease_time) + " (H:M:S):");
+        timeLabel.setTextSize(14);
+        timeLabel.setPadding(0, 12, 0, 4);
+        root.addView(timeLabel);
+
+        LinearLayout timeRow = new LinearLayout(this);
+        timeRow.setOrientation(LinearLayout.HORIZONTAL);
+        EditText etH = new EditText(this); etH.setHint(R.string.input_hour_hint); etH.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        EditText etM = new EditText(this); etM.setHint(R.string.input_minute_hint); etM.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        EditText etS = new EditText(this); etS.setHint(R.string.input_second_hint); etS.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        for (EditText et : new EditText[]{etH, etM, etS}) {
+            et.setLayoutParams(new LinearLayout.LayoutParams(0, (int)(40 * getResources().getDisplayMetrics().density), 1));
+            et.setTextSize(14);
+            et.setGravity(android.view.Gravity.CENTER);
+            et.setPadding(8, 8, 8, 8);
+            timeRow.addView(et);
+        }
+        root.addView(timeRow);
+
+        TextView countLabel = new TextView(this);
+        countLabel.setText(getString(R.string.decrease_count) + ":");
+        countLabel.setTextSize(14);
+        countLabel.setPadding(0, 12, 0, 4);
+        root.addView(countLabel);
+
+        EditText etCount = new EditText(this);
+        etCount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        etCount.setTextSize(14);
+        etCount.setGravity(android.view.Gravity.CENTER);
+        etCount.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int)(40 * getResources().getDisplayMetrics().density)));
+        root.addView(etCount);
+
+        LinearLayout btnRow = new LinearLayout(this);
+        btnRow.setOrientation(LinearLayout.HORIZONTAL);
+        btnRow.setPadding(0, 16, 0, 0);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+            .setTitle(R.string.decrease_config)
+            .setView(root)
+            .create();
+
+        if (data.decreasingMode) {
+            Button restartBtn = new Button(this);
+            restartBtn.setText(getString(R.string.decrease_restart));
+            restartBtn.setTextSize(13);
+            restartBtn.setOnClickListener(v -> {
+                data.deathCount = 0;
+                if (data.initialSpawnTime > 0) data.spawnTime = data.initialSpawnTime;
+                data.initialSpawnTime = 0;
+                dbHelper.editBoss(data);
+                adapter.notifyItemChanged(position);
+                dialog.dismiss();
+                EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, position));
+            });
+            btnRow.addView(restartBtn);
+        }
+
+        Button okBtn = new Button(this);
+        okBtn.setText(android.R.string.ok);
+        okBtn.setTextSize(13);
+        okBtn.setOnClickListener(v -> {
+            boolean enabled = enableCb.isChecked();
+            int h = etH.getText().toString().isEmpty() ? 0 : Integer.parseInt(etH.getText().toString());
+            int m = etM.getText().toString().isEmpty() ? 0 : Integer.parseInt(etM.getText().toString());
+            int s = etS.getText().toString().isEmpty() ? 0 : Integer.parseInt(etS.getText().toString());
+            int cnt = etCount.getText().toString().isEmpty() ? 0 : Integer.parseInt(etCount.getText().toString());
+
+            data.decreasingMode = enabled;
+            data.decreasingSeconds = h * 3600 + m * 60 + s;
+            data.decreasingCount = cnt;
+            if (data.initialSpawnTime == 0) data.initialSpawnTime = data.spawnTime;
+            dbHelper.editBoss(data);
+            adapter.notifyItemChanged(position);
+            dialog.dismiss();
+            EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, position));
+        });
+        btnRow.addView(okBtn);
+
+        root.addView(btnRow);
+        dialog.show();
     }
 }

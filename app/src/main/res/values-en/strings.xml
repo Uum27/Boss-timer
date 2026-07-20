@@ -220,4 +220,12 @@
     <string name="log_auto_reset">Auto Reset</string>
     <string name="log_spawn">Spawn</string>
     <string name="max_bosses_reached">Max 20 bosses per room</string>
+    <string name="cannot_edit_own_role">Cannot edit your own role</string>
+    <string name="error_network">Network error, please try again</string>
+    <string name="decrease_mode">Decrease</string>
+    <string name="decrease_time">Dec. Time</string>
+    <string name="decrease_count">Count</string>
+    <string name="decrease_config">Decrease</string>
+    <string name="decrease_restart">Restart</string>
+    <string name="decrease_current">%d/%d</string>
 </resources>

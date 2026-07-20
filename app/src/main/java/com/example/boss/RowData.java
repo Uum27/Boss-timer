@@ -22,6 +22,11 @@ public class RowData {
     public String roomId;
     public long updateTime;
     public String syncStatus = "synced";
+    public boolean decreasingMode = false;
+    public int decreasingSeconds = 0;
+    public int decreasingCount = 0;
+    public int deathCount = 0;
+    public long initialSpawnTime = 0;
 
     public RowData() {
         this.isNotified = false;

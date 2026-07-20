@@ -462,13 +462,7 @@ public class FloatingWindowService extends Service {
             }
             @Override
             public void onError(String error) {
-                if (error.contains("wrong password")) {
-                    Toast.makeText(FloatingWindowService.this, R.string.room_password_wrong, Toast.LENGTH_SHORT).show();
-                } else if (error.contains("room not found") || error.contains("not found")) {
-                    Toast.makeText(FloatingWindowService.this, R.string.room_not_found, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(FloatingWindowService.this, getString(R.string.room_error, error), Toast.LENGTH_LONG).show();
-                }
+                Toast.makeText(FloatingWindowService.this, dataManager.resolveErrorMessage(getLocalizedContext(), error), Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -641,7 +635,7 @@ public class FloatingWindowService extends Service {
                     } else if (error.contains("wrong password")) {
                         showInlinePasswordInput(panel, roomId, roomName, hasPwd, icon, btn, tv);
                     } else {
-                        Toast.makeText(FloatingWindowService.this, error, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(FloatingWindowService.this, dataManager.resolveErrorMessage(getLocalizedContext(), error), Toast.LENGTH_SHORT).show();
                     }
                 }
             });

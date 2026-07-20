@@ -227,4 +227,12 @@
     <string name="log_auto_reset">自动重置</string>
     <string name="log_spawn">刷新周期</string>
     <string name="max_bosses_reached">每房间最多20个Boss</string>
+    <string name="cannot_edit_own_role">不能修改自己的角色</string>
+    <string name="error_network">网络错误，请稍后重试</string>
+    <string name="decrease_mode">递减模式</string>
+    <string name="decrease_time">替减时间</string>
+    <string name="decrease_count">替减次数</string>
+    <string name="decrease_config">递减设置</string>
+    <string name="decrease_restart">重置次数</string>
+    <string name="decrease_current">当前 %d/%d</string>
 </resources>

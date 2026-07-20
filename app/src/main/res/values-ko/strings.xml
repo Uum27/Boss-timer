@@ -220,4 +220,12 @@
     <string name="log_notify">사전 알림</string>
     <string name="log_auto_reset">자동 리셋</string>
     <string name="log_spawn">리스폰 주기</string>
+    <string name="cannot_edit_own_role">자신의 역할을 수정할 수 없습니다</string>
+    <string name="error_network">네트워크 오류, 다시 시도하세요</string>
+    <string name="decrease_mode">감소 모드</string>
+    <string name="decrease_time">감소 시간</string>
+    <string name="decrease_count">감소 횟수</string>
+    <string name="decrease_config">감소 설정</string>
+    <string name="decrease_restart">카운터 리셋</string>
+    <string name="decrease_current">%d/%d</string>
 </resources>

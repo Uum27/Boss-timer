@@ -199,6 +199,13 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         if (position >= 0 && position < dataList.size()) {
             RowData data = dataList.get(position);
             data.startTime = System.currentTimeMillis();
+            if (data.decreasingMode && data.deathCount < data.decreasingCount && data.decreasingSeconds > 0) {
+                data.deathCount++;
+                if (data.initialSpawnTime == 0) data.initialSpawnTime = data.spawnTime;
+                data.spawnTime = data.initialSpawnTime - data.deathCount * data.decreasingSeconds;
+                if (data.spawnTime < 0) data.spawnTime = 0;
+                dbHelper.editBoss(data);
+            }
             data.setSpawnTime(context);
             data.isNotified = false;
             dataManager.setIsNotified(data.id, false);
@@ -266,7 +273,11 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         RowData data = dataList.get(position);
-        holder.text1.setText(data.text1);
+        if (data.decreasingMode && data.deathCount < data.decreasingCount) {
+            holder.text1.setText("▼" + data.deathCount + "/" + data.decreasingCount + " " + data.text1);
+        } else {
+            holder.text1.setText(data.text1);
+        }
         holder.text2.setText(data.text2);
         holder.text3.setText(data.text3);
 
