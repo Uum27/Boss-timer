@@ -200,4 +200,24 @@
     <string name="manage_room_delete_msg">방 %s 삭제? 모든 데이터 삭제됨.</string>
     <string name="manage_room_members_title">멤버</string>
     <string name="edit_member_title">%s 역할 변경</string>
+    <string name="blacklist">블랙리스트</string>
+    <string name="logs_button">로그</string>
+    <string name="unban">해제</string>
+    <string name="blacklist_empty">비어있음</string>
+    <string name="banned">추방됨</string>
+    <string name="need_expansion_code">코드 필요</string>
+    <string name="max_bosses_reached">최대 20</string>
+    <string name="expansion_code_hint">코드 입력</string>
+    <string name="log_add">추가</string>
+    <string name="log_edit">수정</string>
+    <string name="log_delete">삭제</string>
+    <string name="log_kick">추방</string>
+    <string name="log_unban">해제</string>
+    <string name="log_join">참가</string>
+    <string name="log_end_time">종료 시간</string>
+    <string name="log_reset_time">리셋 시간</string>
+    <string name="log_name">이름</string>
+    <string name="log_notify">사전 알림</string>
+    <string name="log_auto_reset">자동 리셋</string>
+    <string name="log_spawn">리스폰 주기</string>
 </resources>

@@ -94,7 +94,15 @@ async function createRoom(params) {
   if (!userName) return errResp('userName is required');
 
   const countRes = await db.collection(ROOMS).where({ ownerUserId: userId }).count();
-  if (countRes.total >= 10) return errResp('max_rooms_reached');
+  const codeRes = await db.collection('settings').where({ key: 'expansion_codes' }).limit(1).get();
+  const validCodes = codeRes.data.length > 0 ? (codeRes.data[0].codes || []) : [];
+  const useCode = params.expansionCode;
+
+  if (countRes.total >= 2) {
+    if (!useCode || !validCodes.includes(useCode)) return errResp('need_expansion_code');
+    const newCodes = validCodes.filter(c => c !== useCode);
+    await db.collection('settings').doc(codeRes.data[0]._id).update({ codes: newCodes });
+  }
 
   let roomId;
   for (let i = 0; i < 100; i++) {
@@ -140,6 +148,10 @@ async function joinRoom(params) {
 
   if (room.password && room.ownerUserId !== userId && room.password !== (password || '')) {
     return errResp('wrong password');
+  }
+
+  if (room.banned && room.banned.includes(userId)) {
+    return errResp('banned');
   }
 
   let member = await getMember(roomId, userId);
@@ -262,6 +274,17 @@ async function addBoss(params) {
   if (!canDo(member, 'canAdd') && member.role !== 'owner' && member.role !== 'super_admin')
     return errResp('no permission to add boss');
 
+  const bossCount = await db.collection(BOSSES).where({ roomId }).count();
+  const codeRes = await db.collection('settings').where({ key: 'expansion_codes' }).limit(1).get();
+  const validCodes = codeRes.data.length > 0 ? (codeRes.data[0].codes || []) : [];
+  const useCode = boss.expansionCode;
+
+  if (bossCount.total >= 20) {
+    if (!useCode || !validCodes.includes(useCode)) return errResp('need_expansion_code');
+    const newCodes = validCodes.filter(c => c !== useCode);
+    await db.collection('settings').doc(codeRes.data[0]._id).update({ codes: newCodes });
+  }
+
   const addRes = await db.collection(BOSSES).add({
     roomId,
     name: boss.name || '',
@@ -279,6 +302,11 @@ async function addBoss(params) {
 
   await bumpVersion(roomId);
   const room = await getRoom(roomId);
+
+  try { await db.collection('logs').add({
+    roomId, userId, userName: member.name, action: 'add', target: boss.name,
+    spawn: boss.spawn || 0, refreshTime: (boss.startTime||0) + (boss.spawn||0)*1000, time: Date.now(),
+  }); } catch(e) {}
 
   return jsonResp({ docId: addRes.id, version: room.version });
 }
@@ -318,6 +346,24 @@ async function updateBoss(params) {
   await bumpVersion(roomId);
   const room = await getRoom(roomId);
 
+  const bossName = bossDoc.data.length > 0 ? bossDoc.data[0].name : '';
+  const old = bossDoc.data.length > 0 ? bossDoc.data[0] : {};
+  const spawn = old.spawn || 0;
+  const changes = [];
+  if (boss.startTime !== undefined && boss.startTime !== old.startTime) {
+    changes.push({ field: 'startTime', old: old.startTime || 0, new: boss.startTime,
+      oldRefresh: (old.startTime || 0) + spawn * 1000, newRefresh: boss.startTime + spawn * 1000,
+      spawn: spawn });
+  }
+  if (boss.name !== undefined && boss.name !== old.name) changes.push({ field: 'name', old: old.name || '', new: boss.name });
+  if (boss.notifyTime !== undefined && boss.notifyTime !== old.notifyTime) changes.push({ field: 'notifyTime', old: old.notifyTime || 0, new: boss.notifyTime });
+  if (boss.autoReset !== undefined && boss.autoReset !== old.autoReset) changes.push({ field: 'autoReset', old: old.autoReset, new: boss.autoReset });
+  if (boss.spawn !== undefined && boss.spawn !== old.spawn) changes.push({ field: 'spawn', old: old.spawn || 0, new: boss.spawn });
+  try { await db.collection('logs').add({
+    roomId, userId, userName: member.name, action: 'edit', target: bossName || docId,
+    changes: changes, time: Date.now(),
+  }); } catch(e) {}
+
   return jsonResp({ version: room.version });
 }
 
@@ -330,9 +376,17 @@ async function deleteBoss(params) {
   if (!canDo(member, 'canDelete') && member.role !== 'owner')
     return errResp('no permission to delete boss');
 
+  const bossDoc = await db.collection(BOSSES).doc(docId).get();
+  const b = bossDoc.data.length > 0 ? bossDoc.data[0] : {};
   await db.collection(BOSSES).doc(docId).remove();
   await bumpVersion(roomId);
   const room = await getRoom(roomId);
+
+  try { await db.collection('logs').add({
+    roomId, userId, userName: member.name, action: 'delete',
+    target: b.name || docId, spawn: b.spawn || 0,
+    refreshTime: (b.startTime || 0) + (b.spawn || 0) * 1000, time: Date.now(),
+  }); } catch(e) {}
 
   return jsonResp({ version: room.version });
 }
@@ -437,11 +491,63 @@ async function kickMember(params) {
 
   const room = await getRoom(roomId);
   if (!room) return errResp('room not found');
-  if (room.ownerUserId !== ownerUserId) return errResp('only owner can kick');
+
+  const kicker = await getMember(roomId, ownerUserId);
+  if (!kicker || (kicker.role !== 'owner' && kicker.role !== 'super_admin'))
+    return errResp('no permission to kick');
+
+  const targetMember = await getMember(roomId, targetUserId);
+  const targetName = targetMember ? targetMember.name : targetUserId;
 
   await db.collection(MEMBERS).where({ roomId, userId: targetUserId }).remove();
+
+  await db.collection(ROOMS).where({ roomId }).update({
+    banned: _.push([targetUserId]),
+  });
+
+  try { await db.collection('logs').add({
+    roomId,
+    userId: ownerUserId,
+    userName: kicker.name,
+    action: 'kick',
+    target: targetName + ' (' + targetUserId + ')',
+    time: Date.now(),
+  }); } catch(e) {}
+
   await bumpVersion(roomId);
   return jsonResp({ success: true });
+}
+
+async function getBannedList(params) {
+  const { roomId, userId } = params;
+  if (!roomId || !userId) return errResp('roomId, userId required');
+  const member = await getMember(roomId, userId);
+  if (!member || (member.role !== 'owner' && member.role !== 'super_admin'))
+    return errResp('no permission');
+  const room = await getRoom(roomId);
+  return jsonResp({ banned: room.banned || [] });
+}
+
+async function unbanMember(params) {
+  const { roomId, userId, targetUserId } = params;
+  if (!roomId || !userId || !targetUserId) return errResp('roomId, userId, targetUserId required');
+  const member = await getMember(roomId, userId);
+  if (!member || (member.role !== 'owner' && member.role !== 'super_admin'))
+    return errResp('no permission');
+  const room = await getRoom(roomId);
+  const banned = (room.banned || []).filter(id => id !== targetUserId);
+  await db.collection(ROOMS).where({ roomId }).update({ banned });
+  return jsonResp({ success: true });
+}
+
+async function getLogs(params) {
+  const { roomId, userId } = params;
+  if (!roomId || !userId) return errResp('roomId, userId required');
+  const member = await getMember(roomId, userId);
+  if (!member || (member.role !== 'owner' && member.role !== 'super_admin' && member.role !== 'admin'))
+    return errResp('no permission');
+  const res = await db.collection('logs').where({ roomId }).orderBy('time', 'desc').limit(50).get();
+  return jsonResp({ logs: res.data });
 }
 
 async function setAuthCode(params) {
@@ -477,6 +583,9 @@ const ROUTES = {
   '/verifyAuth':       { h: verifyAuth,       m: 'POST' },
   '/setAuthCode':      { h: setAuthCode,      m: 'POST' },
   '/kickMember':       { h: kickMember,       m: 'POST' },
+  '/getBannedList':    { h: getBannedList,    m: 'GET' },
+  '/unbanMember':      { h: unbanMember,      m: 'POST' },
+  '/getLogs':          { h: getLogs,          m: 'GET' },
 };
 
 exports.main = async (event, context) => {

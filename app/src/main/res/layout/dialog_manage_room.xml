@@ -17,7 +17,7 @@
         android:inputType="text"
         android:maxLength="10"
         android:gravity="center"
-        android:textSize="16sp" />
+        android:textSize="14sp" />
 
     <EditText
         android:id="@+id/manage_room_password"
@@ -28,7 +28,7 @@
         android:inputType="textPassword"
         android:maxLength="20"
         android:gravity="center"
-        android:textSize="16sp" />
+        android:textSize="14sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -53,14 +53,37 @@
             android:textSize="14sp" />
     </LinearLayout>
 
-    <Button
-        android:id="@+id/manage_room_delete"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="4dp"
-        android:text="@string/manage_room_delete"
-        android:textColor="#FF4444"
-        android:textSize="14sp" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <Button
+            android:id="@+id/manage_room_blacklist"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="40dp"
+            android:text="@string/blacklist"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/manage_room_logs"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="40dp"
+            android:text="@string/logs_button"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+        <Button
+            android:id="@+id/manage_room_delete"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/manage_room_delete"
+            android:textColor="#FF4040"
+            android:textSize="14sp" />
 
     </LinearLayout>
 </ScrollView>

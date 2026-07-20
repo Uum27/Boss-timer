@@ -386,6 +386,10 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.max_rooms_reached, Toast.LENGTH_SHORT).show();
         } else if (error.contains("higher_priority_locked")) {
             Toast.makeText(this, R.string.higher_priority_locked, Toast.LENGTH_SHORT).show();
+        } else if (error.contains("max_bosses_reached") || error.contains("need_expansion_code")) {
+            Toast.makeText(this, R.string.need_expansion_code, Toast.LENGTH_SHORT).show();
+        } else if (error.contains("banned")) {
+            Toast.makeText(this, R.string.banned, Toast.LENGTH_SHORT).show();
         } else if (error.contains("room not found") || error.contains("not found")) {
             Toast.makeText(this, R.string.room_not_found, Toast.LENGTH_SHORT).show();
         } else {
@@ -596,6 +600,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
         membersBtn.setOnClickListener(w -> showMemberList(roomId));
+        v.findViewById(R.id.manage_room_blacklist).setOnClickListener(bb -> UiHelper.showBlacklist(this, dataManager, roomId));
+        v.findViewById(R.id.manage_room_logs).setOnClickListener(lb -> UiHelper.showLogs(this, dataManager, roomId));
 
         dialog.show();
     }
@@ -1310,13 +1316,15 @@ public class MainActivity extends AppCompatActivity {
 
         TextView roomInfoEt = dialogView.findViewById(R.id.dialog_room_info);
         if (roomInfoEt != null) {
+            String infoText;
             if (dataManager.isShowingSharedData()) {
-                roomInfoEt.setText(getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole())));
+                infoText = getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole()));
                 roomInfoEt.setTextColor(0xFF3F51B5);
             } else {
-                roomInfoEt.setText(R.string.mode_local);
+                infoText = getString(R.string.mode_local);
                 roomInfoEt.setTextColor(0xFF999999);
             }
+            roomInfoEt.setText(infoText + "\n" + getString(R.string.boss_name_prefix) + data.text1);
             roomInfoEt.setVisibility(View.VISIBLE);
         }
 
@@ -1429,18 +1437,18 @@ public class MainActivity extends AppCompatActivity {
     private void showEditRemainingDialog(ItemAdapter adapter, int position) {
         RowData data = adapter.dataList.get(position);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_remaining, null);
-        TextView tvBossName = dialogView.findViewById(R.id.tv_boss_name);
-        tvBossName.setText(getString(R.string.boss_name_prefix) + data.text1);
 
         TextView roomInfoEr = dialogView.findViewById(R.id.dialog_room_info);
         if (roomInfoEr != null) {
+            String infoText;
             if (dataManager.isShowingSharedData()) {
-                roomInfoEr.setText(getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole())));
+                infoText = getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole()));
                 roomInfoEr.setTextColor(0xFF3F51B5);
             } else {
-                roomInfoEr.setText(R.string.mode_local);
+                infoText = getString(R.string.mode_local);
                 roomInfoEr.setTextColor(0xFF999999);
             }
+            roomInfoEr.setText(infoText + "\n" + getString(R.string.boss_name_prefix) + data.text1);
             roomInfoEr.setVisibility(View.VISIBLE);
         }
 

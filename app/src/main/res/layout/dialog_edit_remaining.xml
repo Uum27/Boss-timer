@@ -18,32 +18,13 @@
         android:textSize="13sp"
         android:visibility="gone" />
 
-    <!-- 分割线 -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#E0E0E0"
-        android:layout_marginTop="6dp"
-        android:layout_marginBottom="6dp"/>
-
-    <!-- ★ 右上角显示 Boss 名称 -->
-    <TextView
-        android:id="@+id/tv_boss_name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:gravity="center"
-        android:paddingBottom="4dp"
-        android:textColor="#333333"
-        android:text="@string/boss_name_prefix" />
-
-    <!-- 分割线 -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#E0E0E0"
-        android:layout_marginTop="6dp"
-        android:layout_marginBottom="6dp"/>
+        <!-- 分割线 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="6dp"/>
 
     <TextView
         android:layout_width="match_parent"

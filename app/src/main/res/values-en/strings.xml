@@ -199,5 +199,25 @@
     <string name="manage_room_delete_confirm">Confirm</string>
     <string name="manage_room_delete_msg">Delete room %s? All data will be removed.</string>
     <string name="manage_room_members_title">Members</string>
-    <string name="edit_member_title">Change role of %s</string>
+    <string name="edit_member_title">Edit %s\'s Role</string>
+    <string name="blacklist">Blacklist</string>
+    <string name="logs_button">Logs</string>
+    <string name="unban">Unban</string>
+    <string name="blacklist_empty">Blacklist is empty</string>
+    <string name="banned">You have been kicked from this room</string>
+    <string name="expansion_code_hint">Enter expansion code</string>
+    <string name="need_expansion_code">Expansion code required</string>
+    <string name="log_add">Add</string>
+    <string name="log_edit">Edit</string>
+    <string name="log_delete">Delete</string>
+    <string name="log_kick">Kick</string>
+    <string name="log_unban">Unban</string>
+    <string name="log_join">Join</string>
+    <string name="log_end_time">End Time</string>
+    <string name="log_reset_time">Reset Time</string>
+    <string name="log_name">Name</string>
+    <string name="log_notify">Notify</string>
+    <string name="log_auto_reset">Auto Reset</string>
+    <string name="log_spawn">Spawn</string>
+    <string name="max_bosses_reached">Max 20 bosses per room</string>
 </resources>

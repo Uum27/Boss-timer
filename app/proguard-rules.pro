@@ -56,6 +56,7 @@
 
 # DataManager
 -keep class com.example.boss.DataManager$Callback { *; }
+-keep class com.example.boss.UiHelper { *; }
 -keep class com.example.boss.RowData { *; }
 -keep class com.example.boss.UpdateFloatWindowEvent { *; }
 -keep class com.example.boss.BossNotificationEvent { *; }

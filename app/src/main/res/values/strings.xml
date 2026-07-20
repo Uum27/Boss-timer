@@ -2,6 +2,7 @@
     <string name="app_name">Boss计时器共享版</string>
 
     <string name="search_hint">搜索Boss名称…</string>
+    <string name="log_search_hint">搜索</string>
     <string name="column_name">名称</string>
     <string name="column_refresh">刷新\n时间</string>
     <string name="column_remaining">剩余\n时间</string>
@@ -206,4 +207,24 @@
     <string name="manage_room_delete_msg">确定要删除房间 %s 吗？所有Boss数据将被清除。</string>
     <string name="manage_room_members_title">成员管理</string>
     <string name="edit_member_title">修改 %s 的角色</string>
+    <string name="blacklist">黑名单</string>
+    <string name="logs_button">日志</string>
+    <string name="unban">解封</string>
+    <string name="blacklist_empty">黑名单为空</string>
+    <string name="banned">你已被踢出该房间</string>
+    <string name="expansion_code_hint">请输入扩容码</string>
+    <string name="need_expansion_code">需要扩容码才能继续操作</string>
+    <string name="log_add">添加</string>
+    <string name="log_edit">修改</string>
+    <string name="log_delete">删除</string>
+    <string name="log_kick">踢出</string>
+    <string name="log_unban">解封</string>
+    <string name="log_join">加入</string>
+    <string name="log_end_time">结束时间</string>
+    <string name="log_reset_time">重置时间</string>
+    <string name="log_name">名称</string>
+    <string name="log_notify">提前提醒</string>
+    <string name="log_auto_reset">自动重置</string>
+    <string name="log_spawn">刷新周期</string>
+    <string name="max_bosses_reached">每房间最多20个Boss</string>
 </resources>

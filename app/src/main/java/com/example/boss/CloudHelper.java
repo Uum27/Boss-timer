@@ -73,13 +73,16 @@ public class CloudHelper {
         return request("POST", API_PREFIX + "/registerUser", body);
     }
 
-    public String createRoom(String userId, String userName, String roomName, String password) throws Exception {
+    public String createRoom(String userId, String userName, String roomName, String password, String expansionCode) throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"userId\":\"").append(escapeJson(userId))
           .append("\",\"userName\":\"").append(escapeJson(userName))
           .append("\",\"roomName\":\"").append(escapeJson(roomName)).append("\"");
         if (password != null && !password.isEmpty()) {
             sb.append(",\"password\":\"").append(escapeJson(password)).append("\"");
+        }
+        if (expansionCode != null && !expansionCode.isEmpty()) {
+            sb.append(",\"expansionCode\":\"").append(escapeJson(expansionCode)).append("\"");
         }
         sb.append("}");
         return request("POST", API_PREFIX + "/createRoom", sb.toString());
@@ -173,6 +176,19 @@ public class CloudHelper {
     public String kickMember(String roomId, String ownerUserId, String targetUserId) throws Exception {
         String body = "{\"roomId\":\"" + escapeJson(roomId) + "\",\"ownerUserId\":\"" + escapeJson(ownerUserId) + "\",\"targetUserId\":\"" + escapeJson(targetUserId) + "\"}";
         return request("POST", API_PREFIX + "/kickMember", body);
+    }
+
+    public String getBannedList(String roomId, String userId) throws Exception {
+        return request("GET", API_PREFIX + "/getBannedList?roomId=" + encodeURI(roomId) + "&userId=" + encodeURI(userId), null);
+    }
+
+    public String unbanMember(String roomId, String userId, String targetUserId) throws Exception {
+        String body = "{\"roomId\":\"" + escapeJson(roomId) + "\",\"userId\":\"" + escapeJson(userId) + "\",\"targetUserId\":\"" + escapeJson(targetUserId) + "\"}";
+        return request("POST", API_PREFIX + "/unbanMember", body);
+    }
+
+    public String getLogs(String roomId, String userId) throws Exception {
+        return request("GET", API_PREFIX + "/getLogs?roomId=" + encodeURI(roomId) + "&userId=" + encodeURI(userId), null);
     }
 
     private String escapeJson(String s) {

@@ -12,7 +12,7 @@
     <EditText
         android:id="@+id/room_name_edit"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="48dp"
         android:hint="@string/create_user_name_hint"
         android:inputType="text"
         android:maxLength="10"
@@ -38,11 +38,11 @@
         android:id="@+id/room_id_input"
         android:layout_width="match_parent"
         android:layout_height="48dp"
+        android:gravity="center"
         android:hint="@string/join_room_id_hint"
         android:inputType="number"
         android:maxLength="3"
-        android:textSize="18sp"
-        android:gravity="center" />
+        android:textSize="18sp" />
 
     <EditText
         android:id="@+id/room_password_input"

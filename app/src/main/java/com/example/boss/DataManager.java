@@ -205,11 +205,15 @@ public class DataManager {
     // ---- cloud mode: create/join ----
 
     public void createRoom(String roomName, String password, Callback<String> callback) {
+        createRoom(roomName, password, null, callback);
+    }
+
+    public void createRoom(String roomName, String password, String expansionCode, Callback<String> callback) {
         ensureUserRegistered(roomName, new Callback<String>() {
             @Override public void onResult(String userId) {
                 executor.execute(() -> {
                     try {
-                        String result = cloudHelper.createRoom(myUserId, myUserName, roomName, password);
+                        String result = cloudHelper.createRoom(myUserId, myUserName, roomName, password, expansionCode);
                         JSONObject json = new JSONObject(result);
                         String roomId = json.getString("roomId");
                         setRoomState(roomId, roomName, json.optInt("version", 0), "owner", "{}");
@@ -293,6 +297,7 @@ public class DataManager {
         data.id = id;
         refreshCache();
         pushAddBoss(data);
+        mainHandler.post(() -> EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.ADD_ITEM, data)));
         return id;
     }
 
@@ -327,6 +332,7 @@ public class DataManager {
     }
 
     private void pushAddBoss(RowData data) {
+        long savedStartTime = data.startTime;
         executor.execute(() -> {
             try {
                 String json = rowDataToJson(data);
@@ -338,6 +344,10 @@ public class DataManager {
                 currentRoomVersion = v;
                 dbHelper.saveRoomInfo(currentRoomId, v);
                 dbHelper.updateSyncStatus(data.id, "synced");
+                if (data.startTime != savedStartTime) {
+                    String updateJson = rowDataToJson(data);
+                    cloudHelper.updateBoss(currentRoomId, myUserId, docId, updateJson);
+                }
             } catch (Exception e) { Log.e(TAG, "pushAddBoss failed", e); }
         });
     }
@@ -410,14 +420,10 @@ public class DataManager {
             if (json.has("permissions")) myPermissions = json.optJSONObject("permissions").toString();
             JSONArray bosses = json.optJSONArray("bosses");
             if (bosses != null) {
-                List<String> cloudDocIds = new ArrayList<>();
+                dbHelper.clearCloudBosses(currentRoomId);
                 for (int i = 0; i < bosses.length(); i++) {
-                    JSONObject b = bosses.getJSONObject(i);
-                    RowData data = jsonToRowData(b);
-                    dbHelper.insertOrUpdateBoss(data);
-                    if (data.docId != null) cloudDocIds.add(data.docId);
+                    dbHelper.insertOrUpdateBoss(jsonToRowData(bosses.getJSONObject(i)));
                 }
-                dbHelper.deleteRemoteBossesNotIn(currentRoomId, cloudDocIds);
             }
             currentRoomVersion = version;
             dbHelper.saveRoomInfo(currentRoomId, version);
@@ -482,6 +488,33 @@ public class DataManager {
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError(e.getMessage()));
             }
+        });
+    }
+
+    public void fetchBannedList(String roomId, Callback<String> callback) {
+        executor.execute(() -> {
+            try {
+                String result = cloudHelper.getBannedList(roomId, myUserId);
+                mainHandler.post(() -> callback.onResult(result));
+            } catch (Exception e) { mainHandler.post(() -> callback.onError(e.getMessage())); }
+        });
+    }
+
+    public void unbanMember(String roomId, String targetUserId, Callback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                cloudHelper.unbanMember(roomId, myUserId, targetUserId);
+                mainHandler.post(() -> callback.onResult(true));
+            } catch (Exception e) { mainHandler.post(() -> callback.onError(e.getMessage())); }
+        });
+    }
+
+    public void fetchLogs(String roomId, Callback<String> callback) {
+        executor.execute(() -> {
+            try {
+                String result = cloudHelper.getLogs(roomId, myUserId);
+                mainHandler.post(() -> callback.onResult(result));
+            } catch (Exception e) { mainHandler.post(() -> callback.onError(e.getMessage())); }
         });
     }
 
