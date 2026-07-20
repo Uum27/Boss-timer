@@ -218,6 +218,7 @@ async function updateMemberRole(params) {
   if (!room) return errResp('room not found');
   if (room.ownerUserId !== ownerUserId) return errResp('only owner can change roles');
   if (role === 'owner') return errResp('cannot change to owner role');
+  if (targetUserId === ownerUserId) return errResp('cannot change your own role');
 
   const updateData = {};
   if (role) updateData.role = role;
@@ -488,6 +489,8 @@ async function verifyAuth(params) {
 async function kickMember(params) {
   const { roomId, ownerUserId, targetUserId } = params;
   if (!roomId || !ownerUserId || !targetUserId) return errResp('roomId, ownerUserId, targetUserId required');
+  if (targetUserId === ownerUserId) return errResp('cannot kick yourself');
+  if (room.ownerUserId === targetUserId) return errResp('cannot kick room owner');
 
   const room = await getRoom(roomId);
   if (!room) return errResp('room not found');

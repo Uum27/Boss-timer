@@ -723,8 +723,12 @@ public class FloatingWindowService extends Service {
         }
         if (roomInfoBar == null || roomInfoText == null) return;
         if (roomInfoBar.getVisibility() == View.VISIBLE) {
+            showingLogs = false;
             roomInfoBar.setVisibility(View.GONE);
         } else {
+            floatingView.findViewById(R.id.btn_leave_room).setVisibility(View.VISIBLE);
+            boolean canSeeLogs = dataManager.isOwner() || "admin".equals(dataManager.getMyRole());
+            floatingView.findViewById(R.id.btn_logs).setVisibility(canSeeLogs ? View.VISIBLE : View.GONE);
             Context c = getLocalizedContext();
             String roleText;
             switch (dataManager.getMyRole()) {
@@ -882,6 +886,8 @@ public class FloatingWindowService extends Service {
             updateModeIndicator();
             refreshData();
         });
+        floatingView.findViewById(R.id.btn_logs).setOnClickListener(v -> showRoomLogs());
+
         roomBar = floatingView.findViewById(R.id.tv_room_bar);
         roomBarLayout = floatingView.findViewById(R.id.room_bar_layout);
         roomBarText = floatingView.findViewById(R.id.tv_room_bar);
@@ -1244,6 +1250,56 @@ public class FloatingWindowService extends Service {
 
     public boolean isShowing() {
         return isShowing;
+    }
+
+    private boolean showingLogs = false;
+
+    private void showRoomLogs() {
+        if (roomInfoBar == null || roomInfoText == null) return;
+        if (!dataManager.isOwner() && !"admin".equals(dataManager.getMyRole())) return;
+        if (showingLogs) {
+            showingLogs = false;
+            roomInfoBar.setVisibility(View.GONE);
+            return;
+        }
+        dataManager.fetchLogs(dataManager.getCurrentRoomId(), new DataManager.Callback<String>() {
+            @Override public void onResult(String result) {
+                try {
+                    JSONArray logs = new JSONObject(result).optJSONArray("logs");
+                    if (logs == null || logs.length() == 0) return;
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault());
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < Math.min(2, logs.length()); i++) {
+                        JSONObject l = logs.getJSONObject(i); String a = l.optString("action");
+                        String lb = "add".equals(a)?getString(R.string.log_add):"delete".equals(a)?getString(R.string.log_delete):"kick".equals(a)?getString(R.string.log_kick):getString(R.string.log_edit);
+                        StringBuilder tx = new StringBuilder();
+                        tx.append(sdf.format(new java.util.Date(l.optLong("time")))).append(" ").append(l.optString("userName")).append(" | ").append(l.optString("target")).append("【").append(lb).append("】");
+                        JSONArray chs = l.optJSONArray("changes");
+                        if (chs != null) for (int c=0; c<chs.length(); c++) {
+                            JSONObject ch = chs.getJSONObject(c); String f = ch.optString("field");
+                            if ("startTime".equals(f)) tx.append("\n结束:").append(formatFloatTime(ch.optLong("oldRefresh"))).append("→").append(formatFloatTime(ch.optLong("newRefresh")));
+                            else if ("name".equals(f)) tx.append("\n名称:").append(ch.optString("old")).append("→").append(ch.optString("new"));
+                        }
+                        sb.append(tx.toString());
+                        if (i == 0) sb.append("\n");
+                    }
+                    roomInfoText.setText(sb.toString());
+                    floatingView.findViewById(R.id.btn_leave_room).setVisibility(View.GONE);
+                    floatingView.findViewById(R.id.btn_logs).setVisibility(View.GONE);
+                    roomInfoBar.setVisibility(View.VISIBLE);
+                    showingLogs = true;
+                } catch(Exception e){}
+            }
+            @Override public void onError(String e){}
+        });
+    }
+
+    private String formatFloatTime(long millis) {
+        java.util.Calendar n = java.util.Calendar.getInstance(), t = java.util.Calendar.getInstance(); t.setTimeInMillis(millis);
+        if (n.get(java.util.Calendar.DAY_OF_YEAR) == t.get(java.util.Calendar.DAY_OF_YEAR)
+            && n.get(java.util.Calendar.YEAR) == t.get(java.util.Calendar.YEAR))
+            return new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date(millis));
+        return new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault()).format(new java.util.Date(millis));
     }
 
     public void destroy() {

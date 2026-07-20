@@ -646,7 +646,7 @@ public class MainActivity extends AppCompatActivity {
                         });
                         row.addView(tv);
 
-                        if (!"owner".equals(role) && dataManager.isOwner()) {
+                        if (!"owner".equals(role) && dataManager.isOwner() && !targetUserId.equals(dataManager.getUserId())) {
                             Button kickBtn = new Button(MainActivity.this);
                             kickBtn.setText(R.string.kick_member);
                             kickBtn.setTextSize(12);
@@ -682,11 +682,23 @@ public class MainActivity extends AppCompatActivity {
                         listLayout.addView(div);
                     }
 
-                    AlertDialog memberDialog = new AlertDialog.Builder(MainActivity.this)
-                            .setTitle(R.string.manage_room_members_title)
-                            .setView(listLayout)
-                            .setPositiveButton("🔄", (d, w) -> { d.dismiss(); showMemberList(roomId); })
-                            .create();
+                    LinearLayout root = new LinearLayout(MainActivity.this);
+                    root.setOrientation(LinearLayout.VERTICAL);
+
+                    LinearLayout titleBar = new LinearLayout(MainActivity.this);
+                    titleBar.setOrientation(LinearLayout.HORIZONTAL); titleBar.setPadding(12,8,12,8);
+                    titleBar.setGravity(android.view.Gravity.CENTER_VERTICAL);
+                    TextView titleTv = new TextView(MainActivity.this);
+                    titleTv.setText(getString(R.string.manage_room_members_title)); titleTv.setTextSize(18);
+                    titleTv.setLayoutParams(new LinearLayout.LayoutParams(0,-2,1));
+                    titleBar.addView(titleTv);
+                    Button refreshBtn = new Button(MainActivity.this); refreshBtn.setText("🔄");
+                    refreshBtn.setOnClickListener(v -> { showMemberList(roomId); });
+                    titleBar.addView(refreshBtn);
+                    root.addView(titleBar);
+                    root.addView(listLayout);
+
+                    AlertDialog memberDialog = new AlertDialog.Builder(MainActivity.this).setView(root).create();
                     memberDialog.show();
                 } catch (Exception ignored) {}
             }
@@ -696,6 +708,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void showEditMemberDialog(String roomId, JSONObject member) {
         String targetUserId = member.optString("userId");
+        if (targetUserId.equals(dataManager.getUserId())) {
+            Toast.makeText(this, "不能修改自己的角色", Toast.LENGTH_SHORT).show();
+            return;
+        }
         String name = member.optString("name");
         String currentRole = member.optString("role");
 
