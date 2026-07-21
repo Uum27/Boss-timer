@@ -89,7 +89,28 @@ public class UiHelper {
             try {
                 JSONObject l = logs.getJSONObject(i); String a = l.optString("action");
                 String u = l.optString("userName","").toLowerCase(), t = l.optString("target","").toLowerCase();
-                String lb = "add".equals(a)?ctx.getString(R.string.log_add):"delete".equals(a)?ctx.getString(R.string.log_delete):"kick".equals(a)?ctx.getString(R.string.log_kick):ctx.getString(R.string.log_edit);
+                String lb;
+                if ("add".equals(a)) lb = ctx.getString(R.string.log_add);
+                else if ("delete".equals(a)) lb = ctx.getString(R.string.log_delete);
+                else if ("kick".equals(a)) lb = ctx.getString(R.string.log_kick);
+                else {
+                    JSONArray chk = l.optJSONArray("changes");
+                    boolean hasAutoReset = false;
+                    boolean hasShowInFloat = false;
+                    if (chk != null) {
+                        for (int ci = 0; ci < chk.length(); ci++) {
+                            String f = chk.optJSONObject(ci).optString("field");
+                            if ("autoReset".equals(f)) hasAutoReset = true;
+                            if ("showInFloat".equals(f)) hasShowInFloat = true;
+                        }
+                    }
+                    if (hasAutoReset)
+                        lb = ctx.getString(R.string.log_auto_reset);
+                    else if (hasShowInFloat)
+                        lb = ctx.getString(R.string.log_show_float);
+                    else
+                        lb = ctx.getString(R.string.log_edit);
+                }
                 if (!filter.isEmpty() && !u.contains(filter) && !t.contains(filter) && !lb.contains(filter)
                     && !getActionLabels(a).contains(filter)) continue;
                 StringBuilder tx = new StringBuilder();
@@ -103,6 +124,7 @@ public class UiHelper {
                     } else if ("name".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_name)).append(": ").append(ch.optString("old")).append(" → ").append(ch.optString("new"));
                     else if ("notifyTime".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_notify)).append(": ").append(formatSeconds(ch.optLong("old"))).append(" → ").append(formatSeconds(ch.optLong("new")));
                     else if ("autoReset".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_auto_reset)).append(": ").append(ch.optBoolean("old")?ctx.getString(R.string.yes):ctx.getString(R.string.no)).append(" → ").append(ch.optBoolean("new")?ctx.getString(R.string.yes):ctx.getString(R.string.no));
+                    else if ("showInFloat".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_show_float)).append(": ").append(ch.optBoolean("old")?ctx.getString(R.string.yes):ctx.getString(R.string.no)).append(" → ").append(ch.optBoolean("new")?ctx.getString(R.string.yes):ctx.getString(R.string.no));
                     else if ("spawn".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(ch.optLong("old"))).append(" → ").append(formatSeconds(ch.optLong("new")));
                 }
                 if ("add".equals(a)) {

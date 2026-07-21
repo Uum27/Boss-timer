@@ -59,7 +59,7 @@
     <string name="dialog_button_cancel">취소</string>
 
     <string name="author_dialog_title">저자 성명</string>
-    <string name="author_statement">Boss 타이머.\n\n[데이터]\n로컬: 기기에 저장.\n공유: 클라우드 동기화.\n\n[공유 모드]\n1. "공유" 버튼 클릭\n2. 최초 인증코드 입력\n3. 3자리 방번호 + 비번 입력 참가, 또는 새 방 생성\n\n[역할]\n방장: 전체 권한 (최고관리자 설정 가능)\n최고관리자: 방장과 동일\n관리자: 수정 + 리셋\n멤버: 보기만\n\n[부동창]\n공유 | 최소 | 방 버튼\n"공유" 로컬/공유 전환\n"방" 정보 또는 방 목록\n파란색 바 왼쪽 ☆ 즐겨찾기\n즐겨찾기 방은 목록에서 바로 참가\n\n[동기화]\n방장/최고관리자 변경 즉시 푸시\n60초마다 버전 확인\n버전 변경 시 다운로드\n\n[언어]\n🌐 버튼으로 중/영/한 전환.\n\n[문의]\nQQ: 1781391759 / 810026494</string>
+    <string name="author_statement">Boss 타이머.\n\n[데이터]\n로컬: 기기에 저장.\n공유: 클라우드 동기화.\n\n[공유 모드]\n1. "공유" 버튼 클릭\n2. 최초 인증코드 입력\n3. 3자리 방번호 + 비번 입력 참가, 또는 새 방 생성\n4. 파란색 바 이름 클릭하여 개인 이름 변경\n\n[역할]\n방장: 전체 권한 (최고관리자 설정 가능)\n최고관리자: 방장과 동일\n관리자: 수정 + 리셋\n멤버: 보기만\n\n[부동창]\n공유 | 최소 | 방 버튼\n"공유" 로컬/공유 전환\n전환 버튼 ● = 반대편 알림 있음\n"방" 정보 또는 방 목록\n파란색 바 왼쪽 ☆ 즐겨찾기\n방 정보에서 "로그" 클릭하여 기록 확인\n새로고침 시간 클릭 시 분→시분초 전환\n\n[오터치 방지]\n부동창 리셋 후 모든 버튼 3초 잠금\n메인 리셋/삭제 버튼 기본 숨김\n제목 "리셋" 또는 "삭제" 클릭 시 표시\n최소화 더블클릭 시 위치 잠금\n\n[메인 페이지]\n파란색 바 이름 클릭 → 개인 이름 변경\nBoss 이름 클릭 → 이름/주기 수정\n새로고침 시간 클릭 → 사망/리스폰 수정\n남은 시간 클릭 → 남은 시간 수정\n\n[감소 모드]\n처치 시 리스폰 시간 감소\n이름 클릭→설정에서 시간/횟수 지정\n리셋 시 자동 계산, ▼ 표시\n\n[동기화]\n방장/최고관리자 변경 즉시 푸시\n60초마다 버전 확인\n버전 변경 시 다운로드\n\n[언어]\n🌐 버튼으로 중/영/한 전환.\n\n[새 기능]\n서버 재시작: 방장/최고관리자가 메인 페이지 파란색 "방" 제목 클릭 → "서버 재시작" 선택 → 확인 시 현재 방 모든 일반 Boss 시간 0으로 초기화\n교차 방 알림: 부동창이 다른 방 Boss 주기적으로 스캔, 갱신 임박 시 시스템 알림 및 방 버튼에 빨간점 ● 표시\n방 전환: 방 정보에서 "방 전환" 클릭, 알림 있는 방 목록 표시, 클릭하여 전환\n\n[문의]\nQQ: 1781391759 / 810026494\nKakao: Uum27</string>
 
     <string name="donate_title">후원 감사</string>
     <string name="donate_subtitle">QR 코드로 후원</string>
@@ -218,7 +218,8 @@
     <string name="log_reset_time">리셋 시간</string>
     <string name="log_name">이름</string>
     <string name="log_notify">사전 알림</string>
-    <string name="log_auto_reset">자동 리셋</string>
+    <string name="log_auto_reset">자동</string>
+    <string name="log_show_float">부동창</string>
     <string name="log_spawn">리스폰 주기</string>
     <string name="cannot_edit_own_role">자신의 역할을 수정할 수 없습니다</string>
     <string name="error_network">네트워크 오류, 다시 시도하세요</string>
@@ -228,4 +229,10 @@
     <string name="decrease_config">감소 설정</string>
     <string name="decrease_restart">카운터 리셋</string>
     <string name="decrease_current">%d/%d</string>
+    <string name="server_restart">서버 재시작</string>
+    <string name="server_restart_confirm">모든 시간을 0으로 초기화하시겠습니까?</string>
+    <string name="switch_room">방 전환</string>
+    <string name="no_more_tip">다시 표시 안함</string>
+    <string name="language_restart">언어 변경 후 앱을 다시 시작해야 합니다. 계속하시겠습니까?</string>
+    <string name="expansion_code_tip">확장 코드: 810026494 (제한 해제)</string>
 </resources>

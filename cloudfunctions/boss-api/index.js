@@ -342,6 +342,7 @@ async function updateBoss(params) {
   if (boss.needNotify !== undefined) up.needNotify = boss.needNotify;
   if (boss.autoReset !== undefined) up.autoReset = boss.autoReset;
   if (boss.showInFloat !== undefined) up.showInFloat = boss.showInFloat;
+  if (boss.needNotify !== undefined) up.needNotify = boss.needNotify;
 
   await db.collection(BOSSES).doc(docId).update(up);
   await bumpVersion(roomId);
@@ -360,6 +361,7 @@ async function updateBoss(params) {
   if (boss.notifyTime !== undefined && boss.notifyTime !== old.notifyTime) changes.push({ field: 'notifyTime', old: old.notifyTime || 0, new: boss.notifyTime });
   if (boss.autoReset !== undefined && boss.autoReset !== old.autoReset) changes.push({ field: 'autoReset', old: old.autoReset, new: boss.autoReset });
   if (boss.spawn !== undefined && boss.spawn !== old.spawn) changes.push({ field: 'spawn', old: old.spawn || 0, new: boss.spawn });
+  if (boss.showInFloat !== undefined && boss.showInFloat !== old.showInFloat) changes.push({ field: 'showInFloat', old: !!old.showInFloat, new: !!boss.showInFloat });
   try { await db.collection('logs').add({
     roomId, userId, userName: member.name, action: 'edit', target: bossName || docId,
     changes: changes, time: Date.now(),
@@ -435,13 +437,21 @@ async function getMyRooms(params) {
   const { userId } = params;
   if (!userId) return errResp('userId is required');
 
-  const res = await db.collection(ROOMS).where({ ownerUserId: userId }).get();
+  const memRes = await db.collection(MEMBERS).where({ userId }).get();
+  const roomIds = memRes.data.map(m => m.roomId);
+  const roleMap = {};
+  memRes.data.forEach(m => { roleMap[m.roomId] = m.role; });
+
+  if (roomIds.length === 0) return jsonResp({ rooms: [] });
+
+  const res = await db.collection(ROOMS).where({ roomId: _.in(roomIds) }).get();
   const rooms = res.data.map(r => ({
     roomId: r.roomId,
     roomName: r.roomName,
     hasPassword: !!r.password,
     version: r.version,
     createdAt: r.createdAt,
+    role: roleMap[r.roomId] || 'member',
   }));
   return jsonResp({ rooms });
 }

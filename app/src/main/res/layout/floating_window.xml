@@ -49,7 +49,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/favorite"
-                android:textSize="10sp"
+                android:textSize="12sp"
                 android:textColor="#FFD700"
                 android:paddingStart="2dp" />
         </LinearLayout>
@@ -61,7 +61,22 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:textColor="#FFD700"
-            android:textSize="11sp" />
+            android:textSize="12sp" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#40FFD700"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp" />
+
+        <TextView
+            android:id="@+id/tv_user_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFD700"
+            android:textSize="12sp"
+            android:paddingEnd="2dp" />
     </LinearLayout>
 
     <!-- 标题栏 -->
@@ -161,7 +176,7 @@
             android:maxLines="3"
             android:ellipsize="end" />
 
-        <!-- 第二行：离开按钮 + 日志按钮 -->
+        <!-- 第二行：离开按钮 + 切换房间 + 日志按钮 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -174,10 +189,23 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:text="@string/room_leave"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textColor="#FFAAAA"
                 android:gravity="start"
-                android:paddingStart="4dp" />
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp" />
+
+            <TextView
+                android:id="@+id/btn_switch_room"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/switch_room"
+                android:textSize="12sp"
+                android:textColor="#93D3FD"
+                android:gravity="center"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp" />
 
             <TextView
                 android:id="@+id/btn_logs"
@@ -185,9 +213,10 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:text="@string/logs_button"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textColor="#FFD700"
                 android:gravity="end"
+                android:paddingStart="4dp"
                 android:paddingEnd="4dp" />
         </LinearLayout>
 
@@ -343,14 +372,22 @@
     </LinearLayout>
 
     <!-- 房间列表面板 -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="160dp"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false">
+
     <LinearLayout
         android:id="@+id/room_list_panel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#50000000"
+        android:background="#40000000"
         android:padding="8dp"
         android:visibility="gone" />
+    </ScrollView>
 
     <!-- 底部按钮行 -->
     <LinearLayout

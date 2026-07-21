@@ -18,7 +18,8 @@
         android:maxLength="10"
         android:textSize="16sp"
         android:layout_marginBottom="4dp"
-        android:gravity="center"/>
+        android:gravity="center"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/btn_change_name"
@@ -26,7 +27,8 @@
         android:layout_height="48dp"
         android:layout_marginBottom="8dp"
         android:text="@string/change_name"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        android:visibility="gone" />
 
     <View
         android:layout_width="match_parent"

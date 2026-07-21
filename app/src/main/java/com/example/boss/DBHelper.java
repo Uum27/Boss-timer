@@ -467,4 +467,17 @@ public class DBHelper extends SQLiteOpenHelper {
                 COLUMN_ROOM_ID + " = ? AND " + COLUMN_DOC_ID + " IS NOT NULL AND " + COLUMN_DOC_ID + " NOT IN (" + placeholders.toString() + ")",
                 args);
     }
+
+    public List<String> getAllRoomIds() {
+        List<String> ids = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT DISTINCT " + COLUMN_ROOM_ID + " FROM " + TABLE_BOSS + " WHERE " + COLUMN_ROOM_ID + " IS NOT NULL", null);
+        if (cursor.moveToFirst()) {
+            do {
+                ids.add(cursor.getString(0));
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return ids;
+    }
 }

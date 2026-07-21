@@ -41,6 +41,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     private boolean hadRefreshedDay;
     private OnRowClickListener rowClickListener;
     private boolean showResetButton = false;
+    private boolean showDeleteButton = false;
 
     public ItemAdapter(Context context) {
         this.context = context;
@@ -172,6 +173,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
                             String refreshed = context.getString(R.string.refreshed);
                             if (!refreshed.equals(data.text2)) {
                                 data.text2 = refreshed;
+                                data.text3 = "00:00";
                                 notifyItemChanged(i);
                             }
                         }
@@ -232,6 +234,15 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
 
     public boolean isShowResetButton() {
         return showResetButton;
+    }
+
+    public void setShowDeleteButton(boolean show) {
+        this.showDeleteButton = show;
+        notifyDataSetChanged();
+    }
+
+    public boolean isShowDeleteButton() {
+        return showDeleteButton;
     }
 
     public void addRow(RowData data) {
@@ -313,11 +324,11 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         if (dataManager.isShowingSharedData()) {
             holder.editButton.setVisibility(dataManager.canEdit() ? View.VISIBLE : View.INVISIBLE);
             holder.resetButton.setVisibility(showResetButton && dataManager.canReset() ? View.VISIBLE : View.INVISIBLE);
-            holder.deleteButton.setVisibility(dataManager.canDelete() ? View.VISIBLE : View.INVISIBLE);
+            holder.deleteButton.setVisibility(showDeleteButton && dataManager.canDelete() ? View.VISIBLE : View.INVISIBLE);
         } else {
             holder.editButton.setVisibility(View.VISIBLE);
             holder.resetButton.setVisibility(showResetButton ? View.VISIBLE : View.INVISIBLE);
-            holder.deleteButton.setVisibility(View.VISIBLE);
+            holder.deleteButton.setVisibility(showDeleteButton ? View.VISIBLE : View.INVISIBLE);
         }
 
         holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {

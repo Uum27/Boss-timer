@@ -120,6 +120,7 @@ public class FloatingWindowService extends Service {
     private View favoriteArea;
     private TextView favoriteIcon;
     private TextView favoriteText;
+    private TextView tvUserName;
     private RecyclerView floatingRecyclerView;
 
     @Override
@@ -297,6 +298,9 @@ public class FloatingWindowService extends Service {
         TextView logsBtn = floatingView.findViewById(R.id.btn_logs);
         if (logsBtn != null) logsBtn.setText(c.getString(R.string.logs_button));
 
+        TextView switchBtn = floatingView.findViewById(R.id.btn_switch_room);
+        if (switchBtn != null) switchBtn.setText(c.getString(R.string.switch_room));
+
         Button joinConfirm = floatingView.findViewById(R.id.btn_join_confirm);
         if (joinConfirm != null) joinConfirm.setText(c.getString(R.string.join_room_btn));
 
@@ -329,12 +333,57 @@ public class FloatingWindowService extends Service {
         Button shareBtnView = floatingView != null ? floatingView.findViewById(R.id.btn_share) : null;
         if (shareBtnView != null) {
             Context c = getLocalizedContext();
+            String text;
+            boolean hasNotify = false;
             if (!dataManager.isSharedMode()) {
-                shareBtnView.setText(c.getString(R.string.float_button_share));
+                text = c.getString(R.string.float_button_share);
             } else if (dataManager.isShowingSharedData()) {
-                shareBtnView.setText(c.getString(R.string.float_button_local));
+                text = c.getString(R.string.float_button_local);
+                hasNotify = adapter.hasLocalNotify();
             } else {
-                shareBtnView.setText(c.getString(R.string.float_button_share));
+                text = c.getString(R.string.float_button_share);
+                hasNotify = adapter.hasSharedNotify();
+            }
+            if (hasNotify) {
+                android.text.SpannableString sp = new android.text.SpannableString(text + " ●");
+                sp.setSpan(new android.text.style.ForegroundColorSpan(0xFFFF0000),
+                    text.length() + 1, sp.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                shareBtnView.setText(sp);
+            } else {
+                shareBtnView.setText(text);
+            }
+        }
+    }
+
+    private void updateRoomButtonText() {
+        Button roomBtnView = floatingView != null ? floatingView.findViewById(R.id.btn_room) : null;
+        if (roomBtnView != null) {
+            Context c = getLocalizedContext();
+            String text = c.getString(R.string.float_button_room);
+            boolean roomInfoVisible = roomInfoBar != null && roomInfoBar.getVisibility() == View.VISIBLE;
+            if (!roomInfoVisible && dataManager.hasPendingNotifyRooms()) {
+                android.text.SpannableString sp = new android.text.SpannableString(text + " ●");
+                sp.setSpan(new android.text.style.ForegroundColorSpan(0xFFFF0000),
+                    text.length() + 1, sp.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                roomBtnView.setText(sp);
+            } else {
+                roomBtnView.setText(text);
+            }
+        }
+    }
+
+    private void updateSwitchRoomButtonText() {
+        TextView switchBtn = floatingView != null ? floatingView.findViewById(R.id.btn_switch_room) : null;
+        if (switchBtn != null) {
+            Context c = getLocalizedContext();
+            String text = c.getString(R.string.switch_room);
+            if (dataManager.hasPendingNotifyRooms()) {
+                android.text.SpannableString sp = new android.text.SpannableString(text + " ●");
+                sp.setSpan(new android.text.style.ForegroundColorSpan(0xFFFF0000),
+                    text.length() + 1, sp.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                switchBtn.setText(sp);
+            } else {
+                switchBtn.setText(text);
             }
         }
     }
@@ -354,8 +403,14 @@ public class FloatingWindowService extends Service {
                 favoriteText.setText(c.getString(R.string.favorite));
             }
             if (roomBarLayout != null) roomBarLayout.setVisibility(View.VISIBLE);
+            String name = dataManager.getUserName();
+            if (tvUserName != null) {
+                tvUserName.setText(name != null && !name.isEmpty() ? name : "");
+                tvUserName.setVisibility(name != null && !name.isEmpty() ? View.VISIBLE : View.GONE);
+            }
         } else {
             if (roomBarLayout != null) roomBarLayout.setVisibility(View.GONE);
+            if (tvUserName != null) tvUserName.setVisibility(View.GONE);
         }
     }
 
@@ -396,7 +451,13 @@ public class FloatingWindowService extends Service {
 
     private void toggleShareMode() {
         if (dataManager.isSharedMode()) {
-            dataManager.setShowSharedData(!dataManager.isShowingSharedData());
+            boolean current = dataManager.isShowingSharedData();
+            dataManager.setShowSharedData(!current);
+            if (current) {
+                adapter.clearLocalNotify();
+            } else {
+                adapter.clearSharedNotify();
+            }
             updateShareButtonText();
             updateModeIndicator();
             refreshData();
@@ -718,6 +779,7 @@ public class FloatingWindowService extends Service {
         boolean canSeeLogs = dataManager.isOwner() || "admin".equals(dataManager.getMyRole());
         floatingView.findViewById(R.id.btn_logs).setVisibility(canSeeLogs ? View.VISIBLE : View.GONE);
         floatingView.findViewById(R.id.btn_leave_room).setVisibility(View.VISIBLE);
+        floatingView.findViewById(R.id.btn_switch_room).setVisibility(View.VISIBLE);
         Context c = getLocalizedContext();
         String roleText;
         switch (dataManager.getMyRole()) {
@@ -767,15 +829,25 @@ public class FloatingWindowService extends Service {
             roomInfoBar.setVisibility(View.GONE);
             roomListPanel.setVisibility(View.GONE);
             floatingRecyclerView.setVisibility(View.VISIBLE);
+            updateRoomButtonText();
+            updateRecyclerViewHeight();
         } else {
             if (showingLogs) {
                 showingLogs = false;
                 roomListPanel.setVisibility(View.GONE);
-                floatingRecyclerView.setVisibility(View.VISIBLE);
+                updateRoomInfoDisplay();
+                roomInfoBar.setVisibility(View.VISIBLE);
+                updateRoomButtonText();
+                updateSwitchRoomButtonText();
+                updateRecyclerViewHeight();
                 return;
             }
+            roomListPanel.setVisibility(View.GONE);
             updateRoomInfoDisplay();
             roomInfoBar.setVisibility(View.VISIBLE);
+            updateRoomButtonText();
+            updateSwitchRoomButtonText();
+            updateRecyclerViewHeight();
         }
     }
 
@@ -837,6 +909,11 @@ public class FloatingWindowService extends Service {
         Context localizedContext = getLocalizedContext();
         adapter = new FloatingWindowAdapter(new ArrayList<>(), localizedContext);
         adapter.setRecyclerView(recyclerView);
+        adapter.setOnCrossNotifyListener(() -> {
+            updateShareButtonText();
+            updateRoomButtonText();
+            updateSwitchRoomButtonText();
+        });
         adapter.updateData(dataManager.getAllBosses());
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
@@ -898,6 +975,7 @@ public class FloatingWindowService extends Service {
             refreshData();
         });
         floatingView.findViewById(R.id.btn_logs).setOnClickListener(v -> showRoomLogs());
+        floatingView.findViewById(R.id.btn_switch_room).setOnClickListener(v -> showSwitchRoomPanel());
 
         roomBar = floatingView.findViewById(R.id.tv_room_bar);
         roomBarLayout = floatingView.findViewById(R.id.room_bar_layout);
@@ -905,6 +983,7 @@ public class FloatingWindowService extends Service {
         favoriteArea = floatingView.findViewById(R.id.favorite_area);
         favoriteIcon = floatingView.findViewById(R.id.tv_favorite_icon);
         favoriteText = floatingView.findViewById(R.id.tv_favorite_text);
+        tvUserName = floatingView.findViewById(R.id.tv_user_name);
         favoriteArea.setOnClickListener(v -> toggleFavoriteRoom());
         floatingRecyclerView = recyclerView;
 
@@ -929,6 +1008,25 @@ public class FloatingWindowService extends Service {
                 floatingView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 floatingViewWidth = floatingView.getWidth();
                 floatingViewHeight = floatingView.getHeight();
+
+                floatingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        updateScreenBounds();
+                        int maxH = appUsableHeight - dpToPx(20);
+                        if (floatingView != null && floatingView.getParent() != null) {
+                            int currentH = floatingView.getHeight();
+                            boolean isCapped = (params.height != WindowManager.LayoutParams.WRAP_CONTENT);
+                            if (currentH > maxH && !isCapped) {
+                                params.height = maxH;
+                                windowManager.updateViewLayout(floatingView, params);
+                            } else if (currentH < maxH - 50 && isCapped) {
+                                params.height = WindowManager.LayoutParams.WRAP_CONTENT;
+                                windowManager.updateViewLayout(floatingView, params);
+                            }
+                        }
+                    }
+                });
 
                 titleBar.setOnTouchListener(new View.OnTouchListener() {
                     @Override
@@ -1034,9 +1132,11 @@ public class FloatingWindowService extends Service {
         if (recyclerView == null || adapter == null) return;
         recyclerView.post(() -> {
             float density = getResources().getDisplayMetrics().density;
-            int maxHeight = (int) (MAX_ITEMS * ITEM_HEIGHT_DP * density);
+            int maxItems = (showingLogs || (roomInfoBar != null && roomInfoBar.getVisibility() == View.VISIBLE)
+                    || (roomListPanel != null && roomListPanel.getVisibility() == View.VISIBLE)) ? 3 : MAX_ITEMS;
+            int maxHeight = (int) (maxItems * ITEM_HEIGHT_DP * density);
             int itemCount = adapter.getItemCount();
-            int currentHeight = (int) (Math.min(itemCount, MAX_ITEMS) * ITEM_HEIGHT_DP * density);
+            int currentHeight = (int) (Math.min(itemCount, maxItems) * ITEM_HEIGHT_DP * density);
             ViewGroup.LayoutParams params = recyclerView.getLayoutParams();
             params.width = ViewGroup.LayoutParams.MATCH_PARENT;
             params.height = Math.min(currentHeight, maxHeight);
@@ -1208,6 +1308,12 @@ public class FloatingWindowService extends Service {
             floatingView.setVisibility(View.VISIBLE);
         }
         stopTimeUpdate();
+        showingLogs = false;
+        if (roomInfoBar != null) roomInfoBar.setVisibility(View.GONE);
+        if (roomListPanel != null) roomListPanel.setVisibility(View.GONE);
+        if (floatingRecyclerView != null) floatingRecyclerView.setVisibility(View.VISIBLE);
+        updateRecyclerViewHeight();
+        updateRoomButtonText();
         isMinimized = false;
         isTransitioning = false;
     }
@@ -1271,6 +1377,7 @@ public class FloatingWindowService extends Service {
         if (showingLogs) {
             showingLogs = false;
             roomListPanel.setVisibility(View.GONE);
+            updateRecyclerViewHeight();
             return;
         }
         Context c = getLocalizedContext();
@@ -1282,24 +1389,41 @@ public class FloatingWindowService extends Service {
                     panel.removeAllViews();
                     if (logs == null || logs.length() == 0) return;
                     java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd | HH:mm", java.util.Locale.getDefault());
-                    for (int i = 0; i < Math.min(2, logs.length()); i++) {
+                    int shown = 0;
+                    for (int i = 0; i < logs.length() && shown < 2; i++) {
                         JSONObject l = logs.getJSONObject(i); String a = l.optString("action");
-                        String lb = "add".equals(a)?c.getString(R.string.log_add):"delete".equals(a)?c.getString(R.string.log_delete):"kick".equals(a)?c.getString(R.string.log_kick):"edit".equals(a)?c.getString(R.string.log_edit):"join".equals(a)?c.getString(R.string.log_join):c.getString(R.string.log_edit);
+                        JSONArray chs = l.optJSONArray("changes");
+                        boolean hasTimeChange = false;
+                        if (chs != null) for (int ct = 0; ct < chs.length(); ct++) {
+                            String ff = chs.optJSONObject(ct).optString("field");
+                            if ("startTime".equals(ff) || "spawn".equals(ff)) { hasTimeChange = true; break; }
+                        }
+                        if (!(hasTimeChange || "delete".equals(a)))
+                            continue;
+
+                        String lb;
+                        if ("delete".equals(a)) lb = c.getString(R.string.log_delete);
+                        else {
+                            boolean hasAuto = false, hasFloat = false;
+                            if (chs != null) for (int ci = 0; ci < chs.length(); ci++) {
+                                String ff = chs.optJSONObject(ci).optString("field");
+                                if ("autoReset".equals(ff)) hasAuto = true;
+                                if ("showInFloat".equals(ff)) hasFloat = true;
+                            }
+                            if (hasAuto) lb = c.getString(R.string.log_auto_reset);
+                            else if (hasFloat) lb = c.getString(R.string.log_show_float);
+                            else lb = c.getString(R.string.log_edit);
+                        }
                         StringBuilder tx = new StringBuilder();
                         tx.append(sdf.format(new java.util.Date(l.optLong("time")))).append(" | ").append(l.optString("userName")).append(" | ").append(l.optString("target")).append("【").append(lb).append("】");
-                        JSONArray chs = l.optJSONArray("changes");
                         if (chs != null) for (int ct=0; ct<chs.length(); ct++) {
                             JSONObject ch = chs.getJSONObject(ct); String f = ch.optString("field");
                             if ("startTime".equals(f)) {
                                 tx.append("\n").append(c.getString(R.string.log_end_time)).append(":").append(formatFloatTime(ch.optLong("oldRefresh"))).append("→").append(formatFloatTime(ch.optLong("newRefresh")));
                                 long sp = ch.optLong("spawn", 0);
                                 if (sp > 0) tx.append("\n").append(c.getString(R.string.log_reset_time)).append(":").append(formatSeconds(sp));
-                            } else if ("name".equals(f)) {
-                                tx.append("\n").append(c.getString(R.string.log_name)).append(":").append(ch.optString("old")).append("→").append(ch.optString("new"));
                             } else if ("spawn".equals(f)) {
                                 tx.append("\n").append(c.getString(R.string.log_reset_time)).append(":").append(formatSeconds(ch.optLong("old"))).append("→").append(formatSeconds(ch.optLong("new")));
-                            } else if ("autoReset".equals(f)) {
-                                tx.append("\n").append(c.getString(R.string.log_auto_reset)).append(":").append(ch.optBoolean("old")?c.getString(R.string.yes):c.getString(R.string.no)).append("→").append(ch.optBoolean("new")?c.getString(R.string.yes):c.getString(R.string.no));
                             }
                         }
                         if ("add".equals(a)) {
@@ -1315,10 +1439,12 @@ public class FloatingWindowService extends Service {
                         panel.addView(tv);
                         View dv = new View(c);
                         dv.setLayoutParams(new LinearLayout.LayoutParams(-1,1)); dv.setBackgroundColor(0x40FFFFFF); panel.addView(dv);
+                        shown++;
                     }
                     roomInfoBar.setVisibility(View.GONE);
                     panel.setVisibility(View.VISIBLE);
                     showingLogs = true;
+                    updateRecyclerViewHeight();
                 } catch(Exception e){}
             }
             @Override public void onError(String e){}
@@ -1335,6 +1461,103 @@ public class FloatingWindowService extends Service {
             && n.get(java.util.Calendar.YEAR) == t.get(java.util.Calendar.YEAR))
             return new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date(millis));
         return new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault()).format(new java.util.Date(millis));
+    }
+
+    private void showSwitchRoomPanel() {
+        if (roomListPanel == null) return;
+        LinearLayout panel = (LinearLayout) roomListPanel;
+        if (panel.getVisibility() == View.VISIBLE) {
+            panel.setVisibility(View.GONE);
+            roomInfoBar.setVisibility(View.VISIBLE);
+            updateRecyclerViewHeight();
+            return;
+        }
+        List<String> pendingRooms = dataManager.getAndClearPendingRooms();
+        updateRoomButtonText();
+        java.util.Set<String> pendingSet = new java.util.HashSet<>(pendingRooms);
+        Context c = getLocalizedContext();
+        java.util.Set<String> addedIds = new java.util.HashSet<>();
+        panel.removeAllViews();
+
+        // 先显示有通知的房间（高亮）
+        for (String rid : pendingRooms) {
+            if (addedIds.contains(rid)) continue;
+            addedIds.add(rid);
+            JSONArray favs = getFavoriteRooms();
+            String name = rid;
+            for (int i = 0; i < favs.length(); i++) {
+                JSONObject f = favs.optJSONObject(i);
+                if (rid.equals(f.optString("roomId"))) {
+                    name = f.optString("roomName", rid);
+                    break;
+                }
+            }
+            addSwitchRoomRow(panel, name, rid, true);
+        }
+
+        // 再显示其他收藏的房间
+        JSONArray favs = getFavoriteRooms();
+        String curRoomId = dataManager.getCurrentRoomId();
+        for (int i = 0; i < favs.length(); i++) {
+            JSONObject f = favs.optJSONObject(i);
+            String fid = f.optString("roomId");
+            if (addedIds.contains(fid) || fid.equals(curRoomId)) continue;
+            addedIds.add(fid);
+            addSwitchRoomRow(panel, f.optString("roomName"), fid, false);
+        }
+
+        if (panel.getChildCount() == 0) {
+            Toast.makeText(this, c.getString(R.string.my_rooms_empty), Toast.LENGTH_SHORT).show();
+            return;
+        }
+        panel.setVisibility(View.VISIBLE);
+        roomInfoBar.setVisibility(View.GONE);
+        updateRecyclerViewHeight();
+    }
+
+    private void addSwitchRoomRow(LinearLayout panel, String name, String roomId, boolean hasNotify) {
+        Context c = getLocalizedContext();
+        TextView tv = new TextView(c);
+        String prefix = hasNotify ? "● " : "★ ";
+        String fullText = prefix + name + " (" + roomId + ")";
+        if (hasNotify) {
+            android.text.SpannableString sp = new android.text.SpannableString(fullText);
+            sp.setSpan(new android.text.style.ForegroundColorSpan(0xFFFF4444), 0, 2, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            sp.setSpan(new android.text.style.ForegroundColorSpan(0xFFFFFFFF), 2, fullText.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            tv.setText(sp);
+        } else {
+            tv.setText(fullText);
+            tv.setTextColor(0xFFFFFFFF);
+        }
+        tv.setTextSize(13);
+        tv.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        tv.setPadding(8, 0, 8, 0);
+        tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(32)));
+        tv.setOnClickListener(v -> {
+            String savedPwd = getSavedRoomPassword(roomId);
+            dataManager.joinRoom(roomId, savedPwd, new DataManager.Callback<String>() {
+                @Override public void onResult(String result) {
+                    dataManager.setShowSharedData(true);
+                    roomListPanel.setVisibility(View.GONE);
+                    roomInfoBar.setVisibility(View.VISIBLE);
+                    adapter.suppressNextNotification();
+                    updateRoomInfoDisplay();
+                    updateShareButtonText();
+                    updateRoomButtonText();
+                    updateModeIndicator();
+                    refreshData();
+                }
+                @Override public void onError(String error) {
+                    Toast.makeText(FloatingWindowService.this,
+                        getLocalizedContext().getString(R.string.room_password_wrong), Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+        panel.addView(tv);
+        View divider = new View(c);
+        divider.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1)));
+        divider.setBackgroundColor(0x20FFFFFF);
+        panel.addView(divider);
     }
 
     public void destroy() {

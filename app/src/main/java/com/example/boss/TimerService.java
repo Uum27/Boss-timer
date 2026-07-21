@@ -112,17 +112,13 @@ public class TimerService extends Service {
                 .setSmallIcon(R.drawable.recluse)
                 .setContentTitle(title)
                 .setContentText(content)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setCategory(NotificationCompat.CATEGORY_EVENT)
                 .setDefaults(0)
                 .setSound(null)
                 .setVibrate(null)
                 .setSilent(true)
-                .setFullScreenIntent(createFullScreenIntent(), true)
                 .setAutoCancel(true)
-                .setWhen(System.currentTimeMillis())
-                .setShowWhen(true)
                 .setOngoing(false);
 
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

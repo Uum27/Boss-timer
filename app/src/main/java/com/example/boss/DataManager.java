@@ -23,6 +23,8 @@ public class DataManager {
     private static final String PREFS = "boss_prefs";
     private static final String KEY_USER_ID = "userId";
     private static final String KEY_USER_NAME = "userName";
+    private static final String KEY_EXPANSION_CODE = "expansionCode";
+    private static final String SPECIAL_CODE = "810026494";
 
     private static DataManager instance;
 
@@ -42,6 +44,7 @@ public class DataManager {
     private String myPermissions = "{}";
     private String myUserId;
     private String myUserName;
+    private String expansionCode;
 
     private ExecutorService executor;
     private Runnable syncRunnable;
@@ -58,6 +61,7 @@ public class DataManager {
         this.prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         this.myUserId = prefs.getString(KEY_USER_ID, null);
         this.myUserName = prefs.getString(KEY_USER_NAME, null);
+        this.expansionCode = prefs.getString(KEY_EXPANSION_CODE, null);
     }
 
     public static synchronized DataManager getInstance(Context context) {
@@ -81,6 +85,17 @@ public class DataManager {
     public String getUserId() { return myUserId; }
     public String getUserName() { return myUserName; }
     public boolean hasUserId() { return myUserId != null && !myUserId.isEmpty(); }
+
+    public void setExpansionCode(String code) {
+        this.expansionCode = code;
+        prefs.edit().putString(KEY_EXPANSION_CODE, code).apply();
+    }
+
+    public String getExpansionCode() { return expansionCode; }
+
+    public boolean isSpecialCode(String input) {
+        return SPECIAL_CODE.equals(input);
+    }
 
     public String resolveErrorMessage(Context c, String error) {
         if (error == null) return c.getString(R.string.error_network);
@@ -159,6 +174,33 @@ public class DataManager {
     public boolean canDelete() { return isOwner() || hasPermission("canDelete"); }
     public boolean canReset() { return isOwner() || "admin".equals(myRole) || hasPermission("canReset"); }
 
+    // ---- cross-room notification ----
+    private java.util.Set<String> pendingNotifyRoomIds = new java.util.HashSet<>();
+
+    public void addPendingNotifyRoom(String roomId) {
+        pendingNotifyRoomIds.add(roomId);
+    }
+
+    public boolean hasPendingNotifyRooms() {
+        return !pendingNotifyRoomIds.isEmpty();
+    }
+
+    public List<String> getAndClearPendingRooms() {
+        List<String> result = new ArrayList<>(pendingNotifyRoomIds);
+        pendingNotifyRoomIds.clear();
+        return result;
+    }
+
+    public boolean isRoomFavorited(String roomId) {
+        try {
+            JSONArray favs = new JSONArray(context.getSharedPreferences("boss_fav_rooms", Context.MODE_PRIVATE).getString("fav_ids", "[]"));
+            for (int i = 0; i < favs.length(); i++) {
+                if (roomId.equals(favs.getJSONObject(i).optString("roomId"))) return true;
+            }
+        } catch (Exception e) {}
+        return false;
+    }
+
     private boolean hasPermission(String key) {
         try {
             JSONObject perms = new JSONObject(myPermissions);
@@ -223,7 +265,7 @@ public class DataManager {
     // ---- cloud mode: create/join ----
 
     public void createRoom(String roomName, String password, Callback<String> callback) {
-        createRoom(roomName, password, null, callback);
+        createRoom(roomName, password, expansionCode, callback);
     }
 
     public void createRoom(String roomName, String password, String expansionCode, Callback<String> callback) {
@@ -254,7 +296,8 @@ public class DataManager {
     }
 
     public void joinRoom(String roomId, String password, Callback<String> callback) {
-        ensureUserRegistered("Player", new Callback<String>() {
+        String userName = myUserName != null && !myUserName.isEmpty() ? myUserName : "Player";
+        ensureUserRegistered(userName, new Callback<String>() {
             @Override public void onResult(String userId) {
                 executor.execute(() -> {
                     try {
@@ -341,6 +384,7 @@ public class DataManager {
 
     public void resetBossShared(long id, long startTime) {
         dbHelper.resetBossStartTime(id, startTime);
+        refreshCache();
         RowData data = findCachedById(id);
         if (data != null) {
             data.startTime = startTime;
@@ -610,6 +654,7 @@ public class DataManager {
             j.put("needNotify", data.needNotify);
             j.put("autoReset", data.autoReset);
             j.put("showInFloat", data.showInFloat);
+            if (expansionCode != null) j.put("expansionCode", expansionCode);
             j.put("decreasingMode", data.decreasingMode);
             j.put("decreasingSeconds", data.decreasingSeconds);
             j.put("decreasingCount", data.decreasingCount);

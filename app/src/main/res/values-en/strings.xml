@@ -59,7 +59,7 @@
     <string name="dialog_button_cancel">Cancel</string>
 
     <string name="author_dialog_title">Author Statement</string>
-    <string name="author_statement">Boss Timer App.\n\n[Data]\nLocal: stored on device.\nShared: synced via cloud.\n\n[Shared Mode]\n1. Tap "Share" button\n2. Enter auth code on first use\n3. Enter 3-digit room ID + password to join, or create a new room\n\n[Roles]\nOwner: full access (can set Super Admin)\nSuper Admin: same as Owner\nAdmin: edit + reset\nMember: view only\n\n[Float Window]\nShare | Min | Room buttons\n"Share" toggles local/shared view\n"Room" shows info or room list\n☆ on blue bar to favorite rooms\nFavorited rooms appear in room list to join\n\n[Sync]\nOwner/Super Admin changes push instantly\nVersion checked every 60s\nDownload on version change only\n\n[Language]\n🌐 button to switch CN/EN/KO.\n\n[Contact]\nQQ: 1781391759 / 810026494</string>
+    <string name="author_statement">Boss Timer App.\n\n[Data]\nLocal: stored on device.\nShared: synced via cloud.\n\n[Shared Mode]\n1. Tap "Share" button\n2. Enter auth code on first use\n3. Enter 3-digit room ID + password to join, or create new room\n4. Tap player name in blue bar to change name\n\n[Roles]\nOwner: full access (can set Super Admin)\nSuper Admin: same as Owner\nAdmin: edit + reset\nMember: view only\n\n[Float Window]\nShare | Min | Room buttons\n"Share" toggles local/shared view\nRed dot ● on toggle = pending alert on other side\n"Room" shows info or room list\n☆ on blue bar to favorite rooms\nTap "Log" in room info to view logs\nTap refresh time to toggle HM→HMS\n\n[Anti-Misclick]\nReset locks all buttons for 3s in float window\nMain page reset/delete buttons hidden by default\nTap header "Reset" or "Delete" to show them\nDouble-tap minimized window to lock position\n\n[Main Page]\nTap name in blue bar → change player name\nTap boss name → edit name &amp; spawn period\nTap refresh time → edit kill/spawn time\nTap remaining time → edit remaining time\n\n[Decrease Mode]\nSpawn time reduces per kill\nTap name → config to set time &amp; count\nAuto-calc on reset, ▼ marker on name\n\n[Sync]\nOwner/Super Admin changes push instantly\nVersion checked every 60s\nDownload on version change only\n\n[Language]\n🌐 button to switch CN/EN/KO.\n\n[New Features]\nServer Restart: Owner/Super Admin tap blue "Room" header → select "Server Restart" → confirm to reset all normal boss timers to 0\nCross-Room Alert: Float window scans bosses in other rooms, sends system notification and shows red dot ● on Room button\nSwitch Room: Tap "Switch Room" in room info panel, view rooms with pending alerts, tap to switch\n\n[Contact]\nQQ: 1781391759 / 810026494\nKakao: Uum27</string>
 
     <string name="donate_title">Thank you for support</string>
     <string name="donate_subtitle">Scan to donate</string>
@@ -217,7 +217,8 @@
     <string name="log_reset_time">Reset Time</string>
     <string name="log_name">Name</string>
     <string name="log_notify">Notify</string>
-    <string name="log_auto_reset">Auto Reset</string>
+    <string name="log_auto_reset">Auto</string>
+    <string name="log_show_float">Float</string>
     <string name="log_spawn">Spawn</string>
     <string name="max_bosses_reached">Max 20 bosses per room</string>
     <string name="cannot_edit_own_role">Cannot edit your own role</string>
@@ -228,4 +229,10 @@
     <string name="decrease_config">Decrease</string>
     <string name="decrease_restart">Restart</string>
     <string name="decrease_current">%d/%d</string>
+    <string name="server_restart">Server Restart</string>
+    <string name="server_restart_confirm">Reset all timers to 0?</string>
+    <string name="switch_room">Switch Room</string>
+    <string name="no_more_tip">Don\'t show again</string>
+    <string name="language_restart">App needs to restart after language change. Continue?</string>
+    <string name="expansion_code_tip">Exp. Code: 810026494 (unlock limits)</string>
 </resources>
