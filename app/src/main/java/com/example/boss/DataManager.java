@@ -19,6 +19,11 @@ public class DataManager {
 
     private static final String TAG = "DataManager";
     private static final long SYNC_INTERVAL_MS = 60000;
+    private static final long SYNC_INTERVAL_NEAR_MS = 30000;
+    private static final long SYNC_INTERVAL_URGENT_MS = 10000;
+    private static final long SYNC_INTERVAL_IDLE_MS = 10 * 60 * 1000;
+    private static final long SYNC_INTERVAL_DEEP_IDLE_MS = 30 * 60 * 1000;
+    private static final long SYNC_INTERVAL_SUPER_DEEP_IDLE_MS = 60 * 60 * 1000;
     private static final String CLOUD_BASE_URL = "https://boss-timer-d2g5h1jr528322af9-1304194024.ap-shanghai.app.tcloudbase.com";
     private static final String PREFS = "boss_prefs";
     private static final String KEY_USER_ID = "userId";
@@ -436,25 +441,50 @@ public class DataManager {
             @Override public void run() {
                 if (!isSharedMode || currentRoomId == null) return;
                 checkAndSyncVersion();
-                syncHandler.postDelayed(this, SYNC_INTERVAL_MS);
+                syncHandler.postDelayed(this, getSyncIntervalMs());
             }
         };
         syncHandler.post(syncRunnable);
     }
 
-    private void stopPeriodicSync() {
-        if (syncRunnable != null) { syncHandler.removeCallbacks(syncRunnable); syncRunnable = null; }
+    private long getSyncIntervalMs() {
+        long minRemaining = Long.MAX_VALUE;
+        long now = System.currentTimeMillis();
+        List<RowData> allBosses = dbHelper.getAllBossesByRoom(currentRoomId);
+        for (RowData d : allBosses) {
+            if (d.spawnTime <= 0 || !d.needNotify) continue;
+            long remaining = d.spawnTime - ((now - d.startTime) / 1000);
+            if (remaining <= 0) continue;
+            if (remaining < minRemaining) minRemaining = remaining;
+        }
+        if (minRemaining == Long.MAX_VALUE) {
+            long latestExpireTime = 0;
+            for (RowData d : allBosses) {
+                long expireTime = d.startTime + d.spawnTime * 1000;
+                if (expireTime > latestExpireTime) latestExpireTime = expireTime;
+            }
+            long elapsed = now - latestExpireTime;
+            if (elapsed > 5 * 3600 * 1000L) {
+                return SYNC_INTERVAL_SUPER_DEEP_IDLE_MS;
+            } else if (elapsed > 2 * 3600 * 1000L) {
+                return SYNC_INTERVAL_DEEP_IDLE_MS;
+            }
+            return SYNC_INTERVAL_IDLE_MS;
+        }
+        if (minRemaining <= 60) {
+            return SYNC_INTERVAL_URGENT_MS;
+        } else if (minRemaining <= 300) {
+            return SYNC_INTERVAL_NEAR_MS;
+        } else if (minRemaining <= 900) {
+            return SYNC_INTERVAL_MS;
+        } else {
+            long safeInterval = Math.min(minRemaining / 3, 15 * 60);
+            return safeInterval * 1000;
+        }
     }
 
-    private boolean hasBossNearExpiry() {
-        synchronized (cachedData) {
-            long now = System.currentTimeMillis();
-            for (RowData d : cachedData) {
-                long remaining = d.spawnTime - ((now - d.startTime) / 1000);
-                if (remaining > 0 && remaining <= 180) return true;
-            }
-        }
-        return false;
+    private void stopPeriodicSync() {
+        if (syncRunnable != null) { syncHandler.removeCallbacks(syncRunnable); syncRunnable = null; }
     }
 
     private void checkAndSyncVersion() {

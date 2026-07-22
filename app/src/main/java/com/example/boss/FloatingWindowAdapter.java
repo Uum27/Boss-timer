@@ -1,23 +1,13 @@
 package com.example.boss;
 
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
-import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Vibrator;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
-import androidx.core.app.NotificationCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.greenrobot.eventbus.EventBus;
@@ -31,61 +21,22 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAdapter.ViewHolder> {
-    public interface OnCrossNotifyListener {
-        void onCrossNotify();
-    }
-    private OnCrossNotifyListener crossNotifyListener;
-
-    public void setOnCrossNotifyListener(OnCrossNotifyListener listener) {
-        this.crossNotifyListener = listener;
-    }
     private List<RowData> dataList;
-    private Handler handler;
-    private Vibrator vibrator;
-    private NotificationManager notificationManager;
-    private static final int NOTIFICATION_ID = 100;
-    private Context context; // 这个 context 需要可更新
+    private Context context;
     private DBHelper dbHelper;
     private DataManager dataManager;
     private ItemAdapter.OnButtonClickListener buttonClickListener;
     private RecyclerView recyclerView;
     private boolean hadRefreshedDay;
     private boolean resetLocked = false;
-    private final Handler resetLockHandler = new Handler(Looper.getMainLooper());
+    private final android.os.Handler resetLockHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private Runnable resetLockRunnable;
-    private boolean hasLocalNotify = false;
-    private boolean hasSharedNotify = false;
-    private boolean suppressNextNotify = false;
-    private java.util.Set<Long> notifiedBossIds = new java.util.HashSet<>();
-
-    public void suppressNextNotification() { suppressNextNotify = true; }
-
-    public boolean hasLocalNotify() { return hasLocalNotify; }
-    public void clearLocalNotify() { hasLocalNotify = false; }
-    public boolean hasSharedNotify() { return hasSharedNotify; }
-    public void clearSharedNotify() { hasSharedNotify = false; }
 
     public FloatingWindowAdapter(List<RowData> dataList, Context context) {
         this.context = context;
-        vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-        notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    "boss_timer",
-                    context.getString(R.string.notification_channel_name),
-                    NotificationManager.IMPORTANCE_DEFAULT
-            );
-            channel.setDescription(context.getString(R.string.notification_channel_description));
-            channel.enableLights(true);
-            channel.enableVibration(false);
-            channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-            notificationManager.createNotificationChannel(channel);
-        }
-
         this.dataList = dataList;
         dbHelper = new DBHelper(context);
         dataManager = DataManager.getInstance(context);
-        handler = new Handler(Looper.getMainLooper());
         hadRefreshedDay = false;
     }
 
@@ -98,168 +49,67 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
 
     public void setRecyclerView(RecyclerView recyclerView) {
         this.recyclerView = recyclerView;
-        startTimeUpdate();
     }
 
     public void setOnButtonClickListener(ItemAdapter.OnButtonClickListener listener) {
         this.buttonClickListener = listener;
     }
 
-    private void startTimeUpdate() {
-        Runnable timeUpdateRunnable = new Runnable() {
-            @Override
-            public void run() {
-                notifiedBossIds.clear();
-                for (int i = 0; i < dataList.size(); i++) {
-                    RowData data = dataList.get(i);
-                    long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
+    public void onTick() {
+        if (dataList == null || dataList.size() == 0) return;
+        for (int i = 0; i < dataList.size(); i++) {
+            RowData data = dataList.get(i);
+            long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
 
-                    if (elapsedSeconds >= 0) {
-                        String newTimeText;
-                        if (elapsedSeconds / 3600 > 0) {
-                            newTimeText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
-                                    elapsedSeconds / 3600,
-                                    (elapsedSeconds % 3600) / 60,
-                                    elapsedSeconds % 60);
-                        } else {
-                            newTimeText = String.format(Locale.getDefault(), "%02d:%02d",
-                                    (elapsedSeconds % 3600) / 60,
-                                    elapsedSeconds % 60);
-                        }
-                        data.text3 = newTimeText;
-
-                        checkAndNotify(data, elapsedSeconds);
-                    } else if (data.autoReset && data.spawnTime > 0) {
-                        long currentTime = System.currentTimeMillis();
-                        data.startTime = data.startTime + data.spawnTime * 1000;
-                        while (data.startTime + data.spawnTime * 1000 < currentTime) {
-                            data.startTime = data.startTime + data.spawnTime * 1000;
-                        }
-                        data.setSpawnTime(context); // 使用当前上下文
-                        data.isNotified = false;
-                        if (data.docId != null && data.roomId != null) {
-                            dataManager.resetBossShared(data.id, data.startTime);
-                        } else {
-                            dataManager.resetBossStartTime(data.id, data.startTime);
-                        }
-                        EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.RESET_ITEM, i));
-                        notifyItemChanged(i);
-                    } else {
-                        String refreshed = context.getString(R.string.refreshed);
-                        if (!refreshed.equals(data.text2)) {
-                            data.text2 = refreshed;
-                            data.text3 = "00:00";
-                            notifyItemChanged(i);
-                        }
-                    }
+            if (elapsedSeconds >= 0) {
+                String newTimeText;
+                if (elapsedSeconds / 3600 > 0) {
+                    newTimeText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                            elapsedSeconds / 3600,
+                            (elapsedSeconds % 3600) / 60,
+                            elapsedSeconds % 60);
+                } else {
+                    newTimeText = String.format(Locale.getDefault(), "%02d:%02d",
+                            (elapsedSeconds % 3600) / 60,
+                            elapsedSeconds % 60);
                 }
-
-                notifyDataSetChanged();
-
-                if (!hadRefreshedDay && Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0) {
-                    for (RowData data : dataList) {
-                        data.setSpawnTime(context);
-                    }
-                    notifyDataSetChanged();
-                    hadRefreshedDay = true;
-                } else if (hadRefreshedDay && Calendar.getInstance().get(Calendar.HOUR_OF_DAY) != 0) {
-                    hadRefreshedDay = false;
+                if (!newTimeText.equals(data.text3)) {
+                    data.text3 = newTimeText;
+                    notifyItemChanged(i, "time");
                 }
-
-                if (dataManager.isShowingSharedData()) {
-                    List<RowData> localBosses = dbHelper.getAllBosses();
-                    for (RowData b : localBosses) {
-                        long el = b.spawnTime - ((System.currentTimeMillis() - b.startTime) / 1000);
-                        if (el >= 0 && el <= b.notifyTime && !b.isNotified && b.needNotify) {
-                            checkAndNotify(b, el);
-                            if (!hasLocalNotify) {
-                                hasLocalNotify = true;
-                                if (crossNotifyListener != null) crossNotifyListener.onCrossNotify();
-                            }
-                        }
-                    }
-                } else if (dataManager.isSharedMode()) {
-                    String roomId = dataManager.getCurrentRoomId();
-                    if (roomId != null) {
-                        List<RowData> sharedBosses = dbHelper.getAllBossesByRoom(roomId);
-                        for (RowData b : sharedBosses) {
-                            long el = b.spawnTime - ((System.currentTimeMillis() - b.startTime) / 1000);
-                            if (el >= 0 && el <= b.notifyTime && !b.isNotified && b.needNotify) {
-                                checkAndNotify(b, el);
-                                if (!hasSharedNotify) {
-                                    hasSharedNotify = true;
-                                    if (crossNotifyListener != null) crossNotifyListener.onCrossNotify();
-                                }
-                            }
-                        }
-                    }
+            } else if (data.autoReset && data.spawnTime > 0) {
+                long currentTime = System.currentTimeMillis();
+                data.startTime = data.startTime + data.spawnTime * 1000;
+                while (data.startTime + data.spawnTime * 1000 < currentTime) {
+                    data.startTime = data.startTime + data.spawnTime * 1000;
                 }
-
-                // 跨房间提醒：扫描其他已收藏的房间的boss
-                List<String> allRoomIds = dbHelper.getAllRoomIds();
-                String curRoomId = dataManager.getCurrentRoomId();
-                java.util.Set<String> checkedRooms = new java.util.HashSet<>();
-                for (String rId : allRoomIds) {
-                    if (rId == null || rId.equals(curRoomId)) continue;
-                    if (checkedRooms.contains(rId)) continue;
-                    checkedRooms.add(rId);
-                    List<RowData> roomBosses = dbHelper.getAllBossesByRoom(rId);
-                    boolean hasNotify = false;
-                    for (RowData b : roomBosses) {
-                        long el = b.spawnTime - ((System.currentTimeMillis() - b.startTime) / 1000);
-                        if (el >= 0 && el <= b.notifyTime && !b.isNotified && b.needNotify) {
-                            checkAndNotify(b, el);
-                            hasNotify = true;
-                        }
-                    }
-                    if (hasNotify) {
-                        dataManager.addPendingNotifyRoom(rId);
-                        if (crossNotifyListener != null) crossNotifyListener.onCrossNotify();
-                    }
+                data.setSpawnTime(context);
+                data.isNotified = false;
+                if (data.docId != null && data.roomId != null) {
+                    dataManager.resetBossShared(data.id, data.startTime);
+                } else {
+                    dataManager.resetBossStartTime(data.id, data.startTime);
                 }
-
-                // 清除一次性通知抑制标志
-                if (suppressNextNotify) suppressNextNotify = false;
-
-                handler.postDelayed(this, 1000);
+                EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.RESET_ITEM, i));
+                notifyItemChanged(i);
+            } else {
+                String refreshed = context.getString(R.string.refreshed);
+                if (!refreshed.equals(data.text2)) {
+                    data.text2 = refreshed;
+                    data.text3 = "00:00";
+                    notifyItemChanged(i);
+                }
             }
-        };
-        handler.post(timeUpdateRunnable);
-    }
+        }
 
-    private PendingIntent createFullScreenIntent() {
-        Intent fullScreenIntent = new Intent(context, MainActivity.class);
-        fullScreenIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        return PendingIntent.getActivity(context, 0, fullScreenIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-    }
-
-    private void checkAndNotify(RowData data, long elapsedSeconds) {
-        if (suppressNextNotify) return;
-        if (elapsedSeconds <= data.notifyTime && !data.isNotified && data.needNotify) {
-            if (notifiedBossIds.contains(data.id)) return;
-            notifiedBossIds.add(data.id);
-            if (vibrator.hasVibrator()) {
-                vibrator.vibrate(2000);
+        if (!hadRefreshedDay && Calendar.getInstance().get(Calendar.HOUR_OF_DAY) == 0) {
+            for (RowData data : dataList) {
+                data.setSpawnTime(context);
             }
-            String title = context.getString(R.string.notification_title);
-            String content = String.format(Locale.getDefault(),
-                    context.getString(R.string.notification_content),
-                    data.text1,
-                    elapsedSeconds / 3600,
-                    (elapsedSeconds % 3600) / 60,
-                    elapsedSeconds % 60);
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "boss_timer")
-                    .setSmallIcon(R.drawable.recluse)
-                    .setContentTitle(title)
-                    .setContentText(content)
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                    .setCategory(NotificationCompat.CATEGORY_EVENT)
-                    .setAutoCancel(true)
-                    .setOngoing(false);
-            notificationManager.notify(NOTIFICATION_ID, builder.build());
-            data.isNotified = true;
-            dataManager.setIsNotified(data.id, true);
+            notifyDataSetChanged();
+            hadRefreshedDay = true;
+        } else if (hadRefreshedDay && Calendar.getInstance().get(Calendar.HOUR_OF_DAY) != 0) {
+            hadRefreshedDay = false;
         }
     }
 
@@ -341,28 +191,40 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
         }
         // 点击 text2 切换显示格式
         holder.text2.setOnClickListener(null);
-        holder.text2.setOnClickListener(v -> {
-            if (elapsedSeconds <= 0) {
-                if (!resetLocked && buttonClickListener != null) {
-                    buttonClickListener.onButtonClick(position, ItemAdapter.ButtonType.RESET);
-                    resetLocked = true;
-                    notifyDataSetChanged();
-                    resetLockHandler.removeCallbacks(resetLockRunnable);
-                    resetLockRunnable = () -> { resetLocked = false; notifyDataSetChanged(); };
-                    resetLockHandler.postDelayed(resetLockRunnable, 3000);
-                }
-            } else {
+        if (elapsedSeconds > 0) {
+            holder.text2.setOnClickListener(v -> {
                 data.showSeconds = !data.showSeconds;
                 data.setSpawnTime(context);
                 notifyItemChanged(position);
-            }
-        });
+            });
+        }
         // ★ 分割线控制：最后一项隐藏
         View divider = holder.itemView.findViewById(R.id.divider);
         if (position == getItemCount() - 1) {
             divider.setVisibility(View.GONE);
         } else {
             divider.setVisibility(View.VISIBLE);
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(ViewHolder holder, int position, List<Object> payloads) {
+        if (payloads.isEmpty()) {
+            onBindViewHolder(holder, position);
+            return;
+        }
+        if (dataList == null || position >= dataList.size()) return;
+        RowData data = dataList.get(position);
+        for (Object payload : payloads) {
+            if ("time".equals(payload)) {
+                holder.text3.setText(data.text3);
+                long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
+                if (elapsedSeconds >= 0 && elapsedSeconds < data.notifyTime) {
+                    holder.text3.setTextColor(context.getResources().getColor(android.R.color.holo_red_dark));
+                } else {
+                    holder.text3.setTextColor(context.getResources().getColor(android.R.color.white));
+                }
+            }
         }
     }
 
@@ -432,9 +294,6 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
     }
 
     public void stopTimer() {
-        if (handler != null) {
-            handler.removeCallbacksAndMessages(null);
-        }
         if (resetLockHandler != null) {
             resetLockHandler.removeCallbacks(resetLockRunnable);
         }

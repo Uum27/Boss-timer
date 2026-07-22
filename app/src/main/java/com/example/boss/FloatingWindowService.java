@@ -4,11 +4,12 @@ import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
@@ -17,7 +18,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.PowerManager;
+import android.os.Vibrator;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -63,8 +64,6 @@ public class FloatingWindowService extends Service {
     private static final int NOTIFICATION_ID = 1;
     private DBHelper dbHelper;
     private DataManager dataManager;
-    private Handler handler;
-    private static final long REFRESH_INTERVAL = 1000;
     private boolean isMinimized = false;
     private boolean isTransitioning = false;
     private int initialX, initialY;
@@ -72,8 +71,6 @@ public class FloatingWindowService extends Service {
     private WindowManager.LayoutParams params;
     private WindowManager.LayoutParams params_minimized;
     private TextView minimizedTimeText;
-    private Handler timeHandler = new Handler(Looper.getMainLooper());
-    private Runnable timeUpdateRunnable;
     private float touchSlop;
     private boolean isMoving;
 
@@ -90,7 +87,16 @@ public class FloatingWindowService extends Service {
     private BroadcastReceiver batteryReceiver;
     private boolean isBatteryReceiverRegistered = false;
     private static FloatingWindowService instance;
-    private PowerManager.WakeLock wakeLock;
+
+    private Handler globalTickHandler = new Handler(Looper.getMainLooper());
+    private Runnable globalTickRunnable;
+    private Vibrator vibrator;
+    private NotificationManager notificationManager;
+    private static final int BOSS_NOTIFICATION_ID = 100;
+    private boolean hasLocalNotify = false;
+    private boolean hasSharedNotify = false;
+    private boolean suppressNextNotify = false;
+    private java.util.Set<Long> notifiedBossIds = new java.util.HashSet<>();
 
     // 标题栏控件缓存
     private TextView tvTitleName, tvTitleRefresh, tvTitleRemaining, tvTitleReset;
@@ -99,6 +105,10 @@ public class FloatingWindowService extends Service {
     private boolean isMinimizedLocked = false;
     private long lastClickTime = 0;
     private static final long DOUBLE_CLICK_TIME_DELTA = 300;
+
+    // ★ 展开同步节流
+    private long lastExpandSyncTime = 0;
+    private static final long EXPAND_SYNC_COOLDOWN_MS = 15 * 1000;
 
     private View authPanel;
     private EditText authInput;
@@ -130,13 +140,24 @@ public class FloatingWindowService extends Service {
             return;
         }
 
-        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::WakeLockTag");
-        wakeLock.acquire();
-
         instance = this;
         createNotificationChannel();
         startForeground(NOTIFICATION_ID, createNotification());
+
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel bossChannel = new NotificationChannel(
+                    "boss_timer",
+                    getString(R.string.notification_channel_name),
+                    NotificationManager.IMPORTANCE_DEFAULT
+            );
+            bossChannel.setDescription(getString(R.string.notification_channel_description));
+            bossChannel.enableLights(true);
+            bossChannel.enableVibration(false);
+            bossChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            notificationManager.createNotificationChannel(bossChannel);
+        }
 
         EventBus.getDefault().register(this);
         dbHelper = new DBHelper(this);
@@ -146,6 +167,7 @@ public class FloatingWindowService extends Service {
 
         initFloatingWindow();
         refreshData();
+        startGlobalTick();
     }
 
     private Context getLocalizedContext() {
@@ -339,10 +361,10 @@ public class FloatingWindowService extends Service {
                 text = c.getString(R.string.float_button_share);
             } else if (dataManager.isShowingSharedData()) {
                 text = c.getString(R.string.float_button_local);
-                hasNotify = adapter.hasLocalNotify();
+                hasNotify = hasLocalNotify;
             } else {
                 text = c.getString(R.string.float_button_share);
-                hasNotify = adapter.hasSharedNotify();
+                hasNotify = hasSharedNotify;
             }
             if (hasNotify) {
                 android.text.SpannableString sp = new android.text.SpannableString(text + " ●");
@@ -454,9 +476,9 @@ public class FloatingWindowService extends Service {
             boolean current = dataManager.isShowingSharedData();
             dataManager.setShowSharedData(!current);
             if (current) {
-                adapter.clearLocalNotify();
+                hasLocalNotify = false;
             } else {
-                adapter.clearSharedNotify();
+                hasSharedNotify = false;
             }
             updateShareButtonText();
             updateModeIndicator();
@@ -909,11 +931,6 @@ public class FloatingWindowService extends Service {
         Context localizedContext = getLocalizedContext();
         adapter = new FloatingWindowAdapter(new ArrayList<>(), localizedContext);
         adapter.setRecyclerView(recyclerView);
-        adapter.setOnCrossNotifyListener(() -> {
-            updateShareButtonText();
-            updateRoomButtonText();
-            updateSwitchRoomButtonText();
-        });
         adapter.updateData(dataManager.getAllBosses());
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
@@ -1169,18 +1186,7 @@ public class FloatingWindowService extends Service {
                 initBatteryMonitor();
                 updateBatteryLevel();
 
-                timeUpdateRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        updateTime();
-                        timeHandler.postDelayed(this, 1000);
-                    }
-                };
-
                 touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
-
-                // ★ 移除 setOnClickListener，改用 onTouch 处理单击/双击
-                // floatingView_minimized.setOnClickListener(v -> restoreFromMinimize());
 
                 floatingView_minimized.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
@@ -1189,7 +1195,6 @@ public class FloatingWindowService extends Service {
                         floatingViewWidth_minimized = floatingView_minimized.getWidth();
                         floatingViewHeight_minimized = floatingView_minimized.getHeight();
 
-                        // ★ 设置触摸事件，支持双击锁定/解锁
                         floatingView_minimized.setOnTouchListener(new View.OnTouchListener() {
                             @Override
                             public boolean onTouch(View v, MotionEvent event) {
@@ -1207,7 +1212,6 @@ public class FloatingWindowService extends Service {
                                         float dy = Math.abs(event.getRawY() - initialTouchY);
                                         if (dx > touchSlop || dy > touchSlop) {
                                             isMoving = true;
-                                            // 仅当未锁定时允许移动
                                             if (!isMinimizedLocked) {
                                                 params_minimized.x = initialX + (int) (event.getRawX() - initialTouchX);
                                                 params_minimized.y = initialY + (int) (event.getRawY() - initialTouchY);
@@ -1223,16 +1227,12 @@ public class FloatingWindowService extends Service {
                                         return false;
                                     case MotionEvent.ACTION_UP:
                                         long now = System.currentTimeMillis();
-                                        // 双击检测：两次点击间隔小于阈值且没有移动
                                         if (now - lastClickTime < DOUBLE_CLICK_TIME_DELTA && !isMoving) {
-                                            // 双击：切换锁定状态
                                             isMinimizedLocked = !isMinimizedLocked;
-                                            // 可添加提示（如 Toast），但为避免干扰，暂不添加
-                                            lastClickTime = 0; // 重置
+                                            lastClickTime = 0;
                                             return true;
                                         }
                                         lastClickTime = now;
-                                        // 单击：如果未锁定且未移动，则展开
                                         if (!isMoving && !isMinimizedLocked) {
                                             restoreFromMinimize();
                                         }
@@ -1247,7 +1247,7 @@ public class FloatingWindowService extends Service {
 
                 floatingView.setVisibility(View.GONE);
                 windowManager.addView(floatingView_minimized, params_minimized);
-                startTimeUpdate();
+                isMinimized = true;
             } else {
                 minimize();
             }
@@ -1263,15 +1263,126 @@ public class FloatingWindowService extends Service {
         }
     }
 
-    private void startTimeUpdate() {
-        if (timeUpdateRunnable != null) {
-            timeHandler.post(timeUpdateRunnable);
+    private void startGlobalTick() {
+        if (globalTickRunnable != null) return;
+        globalTickRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isMinimized) {
+                    updateTime();
+                }
+
+                doNotificationChecks();
+
+                if (!isMinimized && adapter != null) {
+                    adapter.onTick();
+                }
+
+                globalTickHandler.postDelayed(this, 1000);
+            }
+        };
+        globalTickHandler.post(globalTickRunnable);
+    }
+
+    private void stopGlobalTick() {
+        if (globalTickHandler != null && globalTickRunnable != null) {
+            globalTickHandler.removeCallbacks(globalTickRunnable);
+            globalTickRunnable = null;
         }
     }
 
-    private void stopTimeUpdate() {
-        if (timeHandler != null && timeUpdateRunnable != null) {
-            timeHandler.removeCallbacks(timeUpdateRunnable);
+    private void doNotificationChecks() {
+        notifiedBossIds.clear();
+
+        List<RowData> currentData = dataManager.getAllBosses();
+        for (RowData data : currentData) {
+            long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
+            if (elapsedSeconds >= 0) {
+                checkAndNotify(data, elapsedSeconds);
+            }
+        }
+
+        if (dataManager.isShowingSharedData()) {
+            List<RowData> localBosses = dbHelper.getAllBosses();
+            for (RowData b : localBosses) {
+                long el = b.spawnTime - ((System.currentTimeMillis() - b.startTime) / 1000);
+                if (el >= 0 && el <= b.notifyTime && !b.isNotified && b.needNotify) {
+                    checkAndNotify(b, el);
+                    if (!hasLocalNotify) {
+                        hasLocalNotify = true;
+                        updateShareButtonText();
+                    }
+                }
+            }
+        } else if (dataManager.isSharedMode()) {
+            String roomId = dataManager.getCurrentRoomId();
+            if (roomId != null) {
+                List<RowData> sharedBosses = dbHelper.getAllBossesByRoom(roomId);
+                for (RowData b : sharedBosses) {
+                    long el = b.spawnTime - ((System.currentTimeMillis() - b.startTime) / 1000);
+                    if (el >= 0 && el <= b.notifyTime && !b.isNotified && b.needNotify) {
+                        checkAndNotify(b, el);
+                        if (!hasSharedNotify) {
+                            hasSharedNotify = true;
+                            updateShareButtonText();
+                        }
+                    }
+                }
+            }
+        }
+
+        List<String> allRoomIds = dbHelper.getAllRoomIds();
+        String curRoomId = dataManager.getCurrentRoomId();
+        java.util.Set<String> checkedRooms = new java.util.HashSet<>();
+        for (String rId : allRoomIds) {
+            if (rId == null || rId.equals(curRoomId)) continue;
+            if (checkedRooms.contains(rId)) continue;
+            checkedRooms.add(rId);
+            List<RowData> roomBosses = dbHelper.getAllBossesByRoom(rId);
+            boolean hasNotify = false;
+            for (RowData b : roomBosses) {
+                long el = b.spawnTime - ((System.currentTimeMillis() - b.startTime) / 1000);
+                if (el >= 0 && el <= b.notifyTime && !b.isNotified && b.needNotify) {
+                    checkAndNotify(b, el);
+                    hasNotify = true;
+                }
+            }
+            if (hasNotify) {
+                dataManager.addPendingNotifyRoom(rId);
+                updateRoomButtonText();
+                updateSwitchRoomButtonText();
+            }
+        }
+
+        if (suppressNextNotify) suppressNextNotify = false;
+    }
+
+    private void checkAndNotify(RowData data, long elapsedSeconds) {
+        if (suppressNextNotify) return;
+        if (elapsedSeconds <= data.notifyTime && !data.isNotified && data.needNotify) {
+            if (notifiedBossIds.contains(data.id)) return;
+            notifiedBossIds.add(data.id);
+            if (vibrator != null && vibrator.hasVibrator()) {
+                vibrator.vibrate(2000);
+            }
+            String title = getString(R.string.notification_title);
+            String content = String.format(Locale.getDefault(),
+                    getString(R.string.notification_content),
+                    data.text1,
+                    elapsedSeconds / 3600,
+                    (elapsedSeconds % 3600) / 60,
+                    elapsedSeconds % 60);
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "boss_timer")
+                    .setSmallIcon(R.drawable.recluse)
+                    .setContentTitle(title)
+                    .setContentText(content)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setCategory(NotificationCompat.CATEGORY_EVENT)
+                    .setAutoCancel(true)
+                    .setOngoing(false);
+            notificationManager.notify(BOSS_NOTIFICATION_ID, builder.build());
+            data.isNotified = true;
+            dataManager.setIsNotified(data.id, true);
         }
     }
 
@@ -1286,7 +1397,6 @@ public class FloatingWindowService extends Service {
             params_minimized.y = params.y;
             windowManager.addView(floatingView_minimized, params_minimized);
         }
-        startTimeUpdate();
         isMinimized = true;
         isTransitioning = false;
     }
@@ -1295,7 +1405,6 @@ public class FloatingWindowService extends Service {
         if (isTransitioning) return;
         isTransitioning = true;
 
-        // ★ 展开时重置锁定状态
         isMinimizedLocked = false;
 
         if (floatingView_minimized != null && floatingView_minimized.getParent() != null) {
@@ -1307,7 +1416,12 @@ public class FloatingWindowService extends Service {
             windowManager.updateViewLayout(floatingView, params);
             floatingView.setVisibility(View.VISIBLE);
         }
-        stopTimeUpdate();
+        refreshData();
+        if (dataManager.isSharedMode()
+                && System.currentTimeMillis() - lastExpandSyncTime >= EXPAND_SYNC_COOLDOWN_MS) {
+            lastExpandSyncTime = System.currentTimeMillis();
+            dataManager.forceSync();
+        }
         showingLogs = false;
         if (roomInfoBar != null) roomInfoBar.setVisibility(View.GONE);
         if (roomListPanel != null) roomListPanel.setVisibility(View.GONE);
@@ -1325,14 +1439,7 @@ public class FloatingWindowService extends Service {
             instance = null;
         }
 
-        try {
-            if (wakeLock != null && wakeLock.isHeld()) {
-                wakeLock.release();
-                wakeLock = null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        stopGlobalTick();
 
         if (adapter != null) {
             adapter.stopTimer();
@@ -1474,12 +1581,11 @@ public class FloatingWindowService extends Service {
         }
         List<String> pendingRooms = dataManager.getAndClearPendingRooms();
         updateRoomButtonText();
-        java.util.Set<String> pendingSet = new java.util.HashSet<>(pendingRooms);
         Context c = getLocalizedContext();
         java.util.Set<String> addedIds = new java.util.HashSet<>();
         panel.removeAllViews();
 
-        // 先显示有通知的房间（高亮）
+        // 1. 有通知的房间（红点高亮置顶）
         for (String rid : pendingRooms) {
             if (addedIds.contains(rid)) continue;
             addedIds.add(rid);
@@ -1492,35 +1598,67 @@ public class FloatingWindowService extends Service {
                     break;
                 }
             }
-            addSwitchRoomRow(panel, name, rid, true);
+            addSwitchRoomRow(panel, name, rid, "●");
         }
 
-        // 再显示其他收藏的房间
-        JSONArray favs = getFavoriteRooms();
+        // 2. 获取自己的房主房间 + 3. 其他收藏房间
         String curRoomId = dataManager.getCurrentRoomId();
-        for (int i = 0; i < favs.length(); i++) {
-            JSONObject f = favs.optJSONObject(i);
-            String fid = f.optString("roomId");
-            if (addedIds.contains(fid) || fid.equals(curRoomId)) continue;
-            addedIds.add(fid);
-            addSwitchRoomRow(panel, f.optString("roomName"), fid, false);
-        }
+        JSONArray favs = getFavoriteRooms();
+        dataManager.fetchMyRooms(new DataManager.Callback<String>() {
+            @Override public void onResult(String result) {
+                try {
+                    JSONObject json = new JSONObject(result);
+                    JSONArray rooms = json.optJSONArray("rooms");
+                    java.util.Set<String> ownerIds = new java.util.HashSet<>();
 
-        if (panel.getChildCount() == 0) {
-            Toast.makeText(this, c.getString(R.string.my_rooms_empty), Toast.LENGTH_SHORT).show();
-            return;
-        }
-        panel.setVisibility(View.VISIBLE);
-        roomInfoBar.setVisibility(View.GONE);
-        updateRecyclerViewHeight();
+                    // 2. 房主房间
+                    if (rooms != null) {
+                        for (int i = 0; i < rooms.length(); i++) {
+                            JSONObject r = rooms.getJSONObject(i);
+                            String rid = r.optString("roomId");
+                            String role = r.optString("role", "member");
+                            if ("owner".equals(role) || "super_admin".equals(role)) {
+                                ownerIds.add(rid);
+                                if (addedIds.contains(rid) || rid.equals(curRoomId)) continue;
+                                addedIds.add(rid);
+                                String name = r.optString("roomName", rid);
+                                addSwitchRoomRow(panel, name, rid, "◆");
+                            }
+                        }
+                    }
+
+                    // 3. 其他收藏房间
+                    for (int i = 0; i < favs.length(); i++) {
+                        JSONObject f = favs.optJSONObject(i);
+                        String fid = f.optString("roomId");
+                        if (addedIds.contains(fid) || fid.equals(curRoomId) || ownerIds.contains(fid)) continue;
+                        addedIds.add(fid);
+                        addSwitchRoomRow(panel, f.optString("roomName"), fid, "★");
+                    }
+
+                    if (panel.getChildCount() == 0) {
+                        Toast.makeText(FloatingWindowService.this, c.getString(R.string.my_rooms_empty), Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    panel.setVisibility(View.VISIBLE);
+                    roomInfoBar.setVisibility(View.GONE);
+                    updateRecyclerViewHeight();
+                } catch (Exception e) {
+                    Toast.makeText(FloatingWindowService.this, R.string.room_error, Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override public void onError(String error) {
+                Toast.makeText(FloatingWindowService.this, c.getString(R.string.my_rooms_empty), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    private void addSwitchRoomRow(LinearLayout panel, String name, String roomId, boolean hasNotify) {
+    private void addSwitchRoomRow(LinearLayout panel, String name, String roomId, String icon) {
         Context c = getLocalizedContext();
         TextView tv = new TextView(c);
-        String prefix = hasNotify ? "● " : "★ ";
+        String prefix = icon + " ";
         String fullText = prefix + name + " (" + roomId + ")";
-        if (hasNotify) {
+        if ("●".equals(icon)) {
             android.text.SpannableString sp = new android.text.SpannableString(fullText);
             sp.setSpan(new android.text.style.ForegroundColorSpan(0xFFFF4444), 0, 2, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             sp.setSpan(new android.text.style.ForegroundColorSpan(0xFFFFFFFF), 2, fullText.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -1540,7 +1678,7 @@ public class FloatingWindowService extends Service {
                     dataManager.setShowSharedData(true);
                     roomListPanel.setVisibility(View.GONE);
                     roomInfoBar.setVisibility(View.VISIBLE);
-                    adapter.suppressNextNotification();
+                    suppressNextNotify = true;
                     updateRoomInfoDisplay();
                     updateShareButtonText();
                     updateRoomButtonText();

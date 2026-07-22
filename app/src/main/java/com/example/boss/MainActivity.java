@@ -80,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
     private EditText searchInput;
     private View mainLayout;
     private static final int REQUEST_CODE_BATTERY_OPTIMIZATION = 1001;
-    private PowerManager.WakeLock wakeLock;
     private Button roomButton;
     private Button leaveRoomButton;
     private View sharedHeader;
@@ -212,10 +211,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             startService(bossServiceIntent);
         }
-
-        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::WakeLockTag");
-        wakeLock.acquire();
 
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         showAuthorDialog();
@@ -521,17 +516,31 @@ public class MainActivity extends AppCompatActivity {
                             favIds.add(favs.getJSONObject(i).optString("roomId"));
                         }
                     }
+                    // 房主房间优先
                     if (rooms != null) {
                         for (int i = 0; i < rooms.length(); i++) {
                             JSONObject r = rooms.getJSONObject(i);
-                            String rid = r.optString("roomId");
-                            myIds.add(rid);
-                            String pwd = r.optBoolean("hasPassword", false) ? getString(R.string.room_has_password) : "";
                             String role = r.optString("role", "member");
-                            boolean isOwner = "owner".equals(role);
-                            boolean isFav = favIds.contains(rid);
-                            String icon = isOwner ? "◆" : (isFav ? "★" : "");
-                            addRoomListItem(listLayout, r.optString("roomName"), rid, pwd, icon, i, rooms, role);
+                            if ("owner".equals(role) || "super_admin".equals(role)) {
+                                String rid = r.optString("roomId");
+                                myIds.add(rid);
+                                String pwd = r.optBoolean("hasPassword", false) ? getString(R.string.room_has_password) : "";
+                                boolean isFav = favIds.contains(rid);
+                                String icon = "◆";
+                                addRoomListItem(listLayout, r.optString("roomName"), rid, pwd, icon, i, rooms, role);
+                            }
+                        }
+                        for (int i = 0; i < rooms.length(); i++) {
+                            JSONObject r = rooms.getJSONObject(i);
+                            String role = r.optString("role", "member");
+                            if (!"owner".equals(role) && !"super_admin".equals(role)) {
+                                String rid = r.optString("roomId");
+                                myIds.add(rid);
+                                String pwd = r.optBoolean("hasPassword", false) ? getString(R.string.room_has_password) : "";
+                                boolean isFav = favIds.contains(rid);
+                                String icon = isFav ? "★" : "";
+                                addRoomListItem(listLayout, r.optString("roomName"), rid, pwd, icon, -1, null, role);
+                            }
                         }
                     }
                     for (int i = 0; i < favs.length(); i++) {
@@ -1758,9 +1767,6 @@ public class MainActivity extends AppCompatActivity {
             stopService(new Intent(this, FloatingWindowService.class));
             isServiceRunning = false;
         }
-        if (wakeLock != null && wakeLock.isHeld()) {
-            wakeLock.release();
-        }
     }
 
     private void showDecreaseDialog(ItemAdapter adapter, int position) {
@@ -1896,7 +1902,12 @@ public class MainActivity extends AppCompatActivity {
         java.util.List<RowData> bosses = dataManager.getAllBosses();
         long now = System.currentTimeMillis();
         for (RowData data : bosses) {
-            if (data.autoReset || data.decreasingMode) continue;
+            if (data.autoReset) continue;
+            if (data.decreasingMode) {
+                data.deathCount = 0;
+                if (data.initialSpawnTime > 0) data.spawnTime = data.initialSpawnTime;
+                data.initialSpawnTime = 0;
+            }
             data.startTime = now - data.spawnTime * 1000;
             data.isNotified = false;
             dataManager.editBossShared(data);

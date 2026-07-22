@@ -106,29 +106,31 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public long insertBoss(RowData data) {
         SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_NAME, data.text1);
-        values.put(COLUMN_SPAWN, data.spawnTime);
-        values.put(COLUMN_EXTRA, data.extraInfo);
-        values.put(COLUMN_START_TIME, data.startTime);
-        values.put(COLUMN_IS_NOTIFIED, data.isNotified ? 1 : 0);
-        values.put(COLUMN_NEED_NOTIFY, data.needNotify ? 1 : 0);
-        values.put(COLUMN_NOTIFY_TIME, data.notifyTime);
-        values.put(COLUMN_AUTO_RESET, data.autoReset ? 1 : 0);
-        values.put(COLUMN_SHOW_IN_FLOAT, data.showInFloat ? 1 : 0);
-        values.put(COLUMN_DOC_ID, data.docId);
-        values.put(COLUMN_ROOM_ID, data.roomId);
-        values.put(COLUMN_UPDATE_TIME, data.updateTime);
-        if (data.syncStatus != null) values.put(COLUMN_SYNC_STATUS, data.syncStatus);
-        values.put(COLUMN_DECREASING_MODE, data.decreasingMode ? 1 : 0);
-        values.put(COLUMN_DECREASING_SECONDS, data.decreasingSeconds);
-        values.put(COLUMN_DECREASING_COUNT, data.decreasingCount);
-        values.put(COLUMN_DEATH_COUNT, data.deathCount);
-        values.put(COLUMN_INITIAL_SPAWN, data.initialSpawnTime);
+        try {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_NAME, data.text1);
+            values.put(COLUMN_SPAWN, data.spawnTime);
+            values.put(COLUMN_EXTRA, data.extraInfo);
+            values.put(COLUMN_START_TIME, data.startTime);
+            values.put(COLUMN_IS_NOTIFIED, data.isNotified ? 1 : 0);
+            values.put(COLUMN_NEED_NOTIFY, data.needNotify ? 1 : 0);
+            values.put(COLUMN_NOTIFY_TIME, data.notifyTime);
+            values.put(COLUMN_AUTO_RESET, data.autoReset ? 1 : 0);
+            values.put(COLUMN_SHOW_IN_FLOAT, data.showInFloat ? 1 : 0);
+            values.put(COLUMN_DOC_ID, data.docId);
+            values.put(COLUMN_ROOM_ID, data.roomId);
+            values.put(COLUMN_UPDATE_TIME, data.updateTime);
+            if (data.syncStatus != null) values.put(COLUMN_SYNC_STATUS, data.syncStatus);
+            values.put(COLUMN_DECREASING_MODE, data.decreasingMode ? 1 : 0);
+            values.put(COLUMN_DECREASING_SECONDS, data.decreasingSeconds);
+            values.put(COLUMN_DECREASING_COUNT, data.decreasingCount);
+            values.put(COLUMN_DEATH_COUNT, data.deathCount);
+            values.put(COLUMN_INITIAL_SPAWN, data.initialSpawnTime);
 
-        long id = db.insert(TABLE_BOSS, null, values);
-        db.close();
-        return id;
+            return db.insert(TABLE_BOSS, null, values);
+        } finally {
+            db.close();
+        }
     }
 
     public List<RowData> getDatabase() {
@@ -347,8 +349,11 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public void clearAllBosses() {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(TABLE_BOSS, null, null);
-        db.close();
+        try {
+            db.delete(TABLE_BOSS, null, null);
+        } finally {
+            db.close();
+        }
     }
 
     public void updateSyncStatus(long id, String status) {
@@ -403,8 +408,11 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public void clearRoomInfo() {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(TABLE_ROOM_INFO, null, null);
-        db.close();
+        try {
+            db.delete(TABLE_ROOM_INFO, null, null);
+        } finally {
+            db.close();
+        }
     }
 
     public void insertOrUpdateBoss(RowData data) {

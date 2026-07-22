@@ -500,10 +500,10 @@ async function kickMember(params) {
   const { roomId, ownerUserId, targetUserId } = params;
   if (!roomId || !ownerUserId || !targetUserId) return errResp('roomId, ownerUserId, targetUserId required');
   if (targetUserId === ownerUserId) return errResp('cannot kick yourself');
-  if (room.ownerUserId === targetUserId) return errResp('cannot kick room owner');
 
   const room = await getRoom(roomId);
   if (!room) return errResp('room not found');
+  if (room.ownerUserId === targetUserId) return errResp('cannot kick room owner');
 
   const kicker = await getMember(roomId, ownerUserId);
   if (!kicker || (kicker.role !== 'owner' && kicker.role !== 'super_admin'))

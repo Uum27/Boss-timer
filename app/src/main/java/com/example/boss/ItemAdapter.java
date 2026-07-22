@@ -130,15 +130,20 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
                         long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
                         if (elapsedSeconds >= 0) {
                             // 更新剩余时间（text3）
+                            String newTimeText;
                             if (elapsedSeconds / 3600 > 0) {
-                                data.text3 = String.format(Locale.getDefault(), "%02d:%02d:%02d",
+                                newTimeText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
                                         elapsedSeconds / 3600,
                                         (elapsedSeconds % 3600) / 60,
                                         elapsedSeconds % 60);
                             } else {
-                                data.text3 = String.format(Locale.getDefault(), "%02d:%02d",
+                                newTimeText = String.format(Locale.getDefault(), "%02d:%02d",
                                         (elapsedSeconds % 3600) / 60,
                                         elapsedSeconds % 60);
+                            }
+                            if (!newTimeText.equals(data.text3)) {
+                                data.text3 = newTimeText;
+                                notifyItemChanged(i, "time");
                             }
 
                             // 检查是否需要通知
@@ -184,12 +189,11 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
                         for (RowData data : dataList) {
                             data.setSpawnTime(context);
                         }
+                        notifyDataSetChanged();
                         hadRefreshedDay = true;
                     } else if (hadRefreshedDay && Calendar.getInstance().get(Calendar.HOUR_OF_DAY) != 0) {
                         hadRefreshedDay = false;
                     }
-
-                    notifyDataSetChanged();
                 }
                 handler.postDelayed(this, 1000);
             }
@@ -268,6 +272,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     @Override
     public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
         super.onDetachedFromRecyclerView(recyclerView);
+        EventBus.getDefault().unregister(this);
         if (handler != null) {
             handler.removeCallbacksAndMessages(null);
         }
@@ -358,6 +363,27 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
 
 
         holder.bind(data);
+    }
+
+    @Override
+    public void onBindViewHolder(ViewHolder holder, int position, List<Object> payloads) {
+        if (payloads.isEmpty()) {
+            onBindViewHolder(holder, position);
+            return;
+        }
+        if (dataList == null || position >= dataList.size()) return;
+        RowData data = dataList.get(position);
+        for (Object payload : payloads) {
+            if ("time".equals(payload)) {
+                holder.text3.setText(data.text3);
+                long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
+                if (elapsedSeconds >= 0 && elapsedSeconds < data.notifyTime) {
+                    holder.text3.setTextColor(context.getResources().getColor(android.R.color.holo_red_dark));
+                } else {
+                    holder.text3.setTextColor(context.getResources().getColor(android.R.color.black));
+                }
+            }
+        }
     }
 
     @Override
