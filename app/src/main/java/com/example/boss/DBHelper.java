@@ -300,6 +300,13 @@ public class DBHelper extends SQLiteOpenHelper {
         db.delete(TABLE_BOSS, COLUMN_ID + " = ?", new String[]{String.valueOf(id)});
     }
 
+    public void updateBossStartTime(long id, long startTime) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_START_TIME, startTime);
+        db.update(TABLE_BOSS, values, COLUMN_ID + " = ?", new String[]{String.valueOf(id)});
+    }
+
     public void resetBossStartTime(long id, long startTime) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -427,6 +434,11 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put(COLUMN_NOTIFY_TIME, data.notifyTime);
         values.put(COLUMN_AUTO_RESET, data.autoReset ? 1 : 0);
         values.put(COLUMN_SHOW_IN_FLOAT, data.showInFloat ? 1 : 0);
+        values.put(COLUMN_DECREASING_MODE, data.decreasingMode ? 1 : 0);
+        values.put(COLUMN_DECREASING_SECONDS, data.decreasingSeconds);
+        values.put(COLUMN_DECREASING_COUNT, data.decreasingCount);
+        values.put(COLUMN_DEATH_COUNT, data.deathCount);
+        values.put(COLUMN_INITIAL_SPAWN, data.initialSpawnTime);
         if (data.docId != null) values.put(COLUMN_DOC_ID, data.docId);
         if (data.roomId != null) values.put(COLUMN_ROOM_ID, data.roomId);
         values.put(COLUMN_UPDATE_TIME, data.updateTime);

@@ -165,6 +165,10 @@ async function joinRoom(params) {
       joinedAt: Date.now(),
     });
     member = await getMember(roomId, userId);
+    try { await db.collection('logs').add({
+      roomId, userId, userName, action: 'join',
+      target: userName, time: Date.now(),
+    }); } catch(e) {}
   } else if (userName && userName !== member.name) {
     await db.collection(MEMBERS).where({ roomId, userId }).update({ name: userName });
     member = await getMember(roomId, userId);
@@ -220,12 +224,25 @@ async function updateMemberRole(params) {
   if (role === 'owner') return errResp('cannot change to owner role');
   if (targetUserId === ownerUserId) return errResp('cannot change your own role');
 
+  const targetMember = await getMember(roomId, targetUserId);
+  const oldRole = targetMember ? targetMember.role : 'member';
+  const targetName = targetMember ? targetMember.name : targetUserId;
+
   const updateData = {};
   if (role) updateData.role = role;
   if (permissions) updateData.permissions = permissions;
 
   await db.collection(MEMBERS).where({ roomId, userId: targetUserId }).update(updateData);
   await bumpVersion(roomId);
+
+  const roleNames = { owner: '房主', super_admin: '超管', admin: '管理员', member: '成员' };
+  const ownerMember = await getMember(roomId, ownerUserId);
+  const ownerName = ownerMember ? ownerMember.name : ownerUserId;
+  try { await db.collection('logs').add({
+    roomId, userId: ownerUserId, userName: ownerName, action: 'role',
+    target: targetName, targetUserId: targetUserId, time: Date.now(),
+    changes: [{ field: 'role', old: roleNames[oldRole] || oldRole, new: roleNames[role] || role }],
+  }); } catch(e) {}
 
   return jsonResp({ success: true });
 }
@@ -253,6 +270,11 @@ async function getBosses(params) {
     needNotify: b.needNotify !== false,
     autoReset: b.autoReset !== false,
     showInFloat: b.showInFloat !== false,
+    decreasingMode: b.decreasingMode || false,
+    decreasingSeconds: b.decreasingSeconds || 0,
+    decreasingCount: b.decreasingCount || 0,
+    deathCount: b.deathCount || 0,
+    initialSpawnTime: b.initialSpawnTime || 0,
   }));
 
   return jsonResp({
@@ -296,6 +318,11 @@ async function addBoss(params) {
     needNotify: boss.needNotify !== false,
     autoReset: boss.autoReset !== false,
     showInFloat: boss.showInFloat !== false,
+    decreasingMode: boss.decreasingMode || false,
+    decreasingSeconds: boss.decreasingSeconds || 0,
+    decreasingCount: boss.decreasingCount || 0,
+    deathCount: boss.deathCount || 0,
+    initialSpawnTime: boss.initialSpawnTime || 0,
     lastModifier: userId,
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -342,7 +369,11 @@ async function updateBoss(params) {
   if (boss.needNotify !== undefined) up.needNotify = boss.needNotify;
   if (boss.autoReset !== undefined) up.autoReset = boss.autoReset;
   if (boss.showInFloat !== undefined) up.showInFloat = boss.showInFloat;
-  if (boss.needNotify !== undefined) up.needNotify = boss.needNotify;
+  if (boss.decreasingMode !== undefined) up.decreasingMode = boss.decreasingMode;
+  if (boss.decreasingSeconds !== undefined) up.decreasingSeconds = boss.decreasingSeconds;
+  if (boss.decreasingCount !== undefined) up.decreasingCount = boss.decreasingCount;
+  if (boss.deathCount !== undefined) up.deathCount = boss.deathCount;
+  if (boss.initialSpawnTime !== undefined) up.initialSpawnTime = boss.initialSpawnTime;
 
   await db.collection(BOSSES).doc(docId).update(up);
   await bumpVersion(roomId);
@@ -362,10 +393,12 @@ async function updateBoss(params) {
   if (boss.autoReset !== undefined && boss.autoReset !== old.autoReset) changes.push({ field: 'autoReset', old: old.autoReset, new: boss.autoReset });
   if (boss.spawn !== undefined && boss.spawn !== old.spawn) changes.push({ field: 'spawn', old: old.spawn || 0, new: boss.spawn });
   if (boss.showInFloat !== undefined && boss.showInFloat !== old.showInFloat) changes.push({ field: 'showInFloat', old: !!old.showInFloat, new: !!boss.showInFloat });
-  try { await db.collection('logs').add({
-    roomId, userId, userName: member.name, action: 'edit', target: bossName || docId,
-    changes: changes, time: Date.now(),
-  }); } catch(e) {}
+  if (changes.length > 0) {
+    try { await db.collection('logs').add({
+      roomId, userId, userName: member.name, action: 'edit', target: bossName || docId,
+      changes: changes, time: Date.now(),
+    }); } catch(e) {}
+  }
 
   return jsonResp({ version: room.version });
 }
@@ -563,6 +596,18 @@ async function getLogs(params) {
   return jsonResp({ logs: res.data });
 }
 
+async function addLog(params) {
+  const { roomId, userId, userName, action, target, time, spawn, refreshTime, changes, bosses } = params;
+  if (!roomId || !userId || !action) return errResp('roomId, userId, action required');
+  const logData = { roomId, userId, userName: userName || '', action, target: target || '', time: time || Date.now() };
+  if (spawn !== undefined) logData.spawn = spawn;
+  if (refreshTime !== undefined) logData.refreshTime = refreshTime;
+  if (changes !== undefined) logData.changes = changes;
+  if (bosses !== undefined) logData.bosses = bosses;
+  await db.collection('logs').add(logData);
+  return jsonResp({ success: true });
+}
+
 async function setAuthCode(params) {
   const { code, masterKey } = params;
   if (masterKey !== 'boss2024admin') return errResp('invalid master key');
@@ -599,6 +644,7 @@ const ROUTES = {
   '/getBannedList':    { h: getBannedList,    m: 'GET' },
   '/unbanMember':      { h: unbanMember,      m: 'POST' },
   '/getLogs':          { h: getLogs,          m: 'GET' },
+  '/addLog':           { h: addLog,           m: 'POST' },
 };
 
 exports.main = async (event, context) => {

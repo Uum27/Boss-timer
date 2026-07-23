@@ -61,7 +61,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
             RowData data = dataList.get(i);
             long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
 
-            if (elapsedSeconds >= 0) {
+            if (elapsedSeconds > 0) {
                 String newTimeText;
                 if (elapsedSeconds / 3600 > 0) {
                     newTimeText = String.format(Locale.getDefault(), "%02d:%02d:%02d",
@@ -79,18 +79,25 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
                 }
             } else if (data.autoReset && data.spawnTime > 0) {
                 long currentTime = System.currentTimeMillis();
-                data.startTime = data.startTime + data.spawnTime * 1000;
-                while (data.startTime + data.spawnTime * 1000 < currentTime) {
-                    data.startTime = data.startTime + data.spawnTime * 1000;
+                long cycle = data.spawnTime * 1000;
+                long cycles = (currentTime - data.startTime) / cycle;
+                data.startTime = data.startTime + cycles * cycle;
+                while (data.startTime + cycle <= currentTime) {
+                    data.startTime = data.startTime + cycle;
                 }
                 data.setSpawnTime(context);
-                data.isNotified = false;
-                if (data.docId != null && data.roomId != null) {
+                if (dataManager.isShowingSharedData() && data.docId != null) {
                     dataManager.resetBossShared(data.id, data.startTime);
                 } else {
                     dataManager.resetBossStartTime(data.id, data.startTime);
                 }
-                EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.RESET_ITEM, i));
+                long newElapsed = data.spawnTime - ((currentTime - data.startTime) / 1000);
+                if (newElapsed >= 3600) {
+                    data.text3 = String.format(Locale.getDefault(), "%02d:%02d:%02d", newElapsed / 3600, (newElapsed % 3600) / 60, newElapsed % 60);
+                } else {
+                    data.text3 = String.format(Locale.getDefault(), "%02d:%02d", (newElapsed % 3600) / 60, newElapsed % 60);
+                }
+                dataManager.addAutoLog(data.id, data.startTime, data.spawnTime);
                 notifyItemChanged(i);
             } else {
                 String refreshed = context.getString(R.string.refreshed);
@@ -250,8 +257,15 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
             }
         }
 
-        // 排序
+        // 排序：已刷新且>2小时的排到底部，其余按结束时间升序
         Collections.sort(filteredList, (o1, o2) -> {
+            long now = System.currentTimeMillis();
+            long elapsed1 = o1.spawnTime - ((now - o1.startTime) / 1000);
+            long elapsed2 = o2.spawnTime - ((now - o2.startTime) / 1000);
+            boolean isOld1 = elapsed1 < 0 && !o1.autoReset && Math.abs(elapsed1) > 7200;
+            boolean isOld2 = elapsed2 < 0 && !o2.autoReset && Math.abs(elapsed2) > 7200;
+            if (isOld1 && !isOld2) return 1;
+            if (!isOld1 && isOld2) return -1;
             long time1 = o1.startTime + o1.spawnTime * 1000;
             long time2 = o2.startTime + o2.spawnTime * 1000;
             return Long.compare(time1, time2);
@@ -263,6 +277,14 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
                 data.showSeconds = showSecondsMap.get(data.id);
             }
             data.setSpawnTime(context); // 应用当前 showSeconds 刷新 text2
+            long elapsed = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
+            if (elapsed >= 3600) {
+                data.text3 = String.format(Locale.getDefault(), "%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60);
+            } else if (elapsed >= 0) {
+                data.text3 = String.format(Locale.getDefault(), "%02d:%02d", (elapsed % 3600) / 60, elapsed % 60);
+            } else {
+                data.text3 = "00:00";
+            }
         }
 
         dataList = filteredList;

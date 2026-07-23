@@ -1499,28 +1499,18 @@ public class FloatingWindowService extends Service {
                     int shown = 0;
                     for (int i = 0; i < logs.length() && shown < 2; i++) {
                         JSONObject l = logs.getJSONObject(i); String a = l.optString("action");
+                        if (!"delete".equals(a) && !"edit".equals(a)) continue;
                         JSONArray chs = l.optJSONArray("changes");
                         boolean hasTimeChange = false;
                         if (chs != null) for (int ct = 0; ct < chs.length(); ct++) {
                             String ff = chs.optJSONObject(ct).optString("field");
                             if ("startTime".equals(ff) || "spawn".equals(ff)) { hasTimeChange = true; break; }
                         }
-                        if (!(hasTimeChange || "delete".equals(a)))
-                            continue;
+                        if (!"delete".equals(a) && !hasTimeChange) continue;
 
                         String lb;
                         if ("delete".equals(a)) lb = c.getString(R.string.log_delete);
-                        else {
-                            boolean hasAuto = false, hasFloat = false;
-                            if (chs != null) for (int ci = 0; ci < chs.length(); ci++) {
-                                String ff = chs.optJSONObject(ci).optString("field");
-                                if ("autoReset".equals(ff)) hasAuto = true;
-                                if ("showInFloat".equals(ff)) hasFloat = true;
-                            }
-                            if (hasAuto) lb = c.getString(R.string.log_auto_reset);
-                            else if (hasFloat) lb = c.getString(R.string.log_show_float);
-                            else lb = c.getString(R.string.log_edit);
-                        }
+                        else lb = c.getString(R.string.log_edit);
                         StringBuilder tx = new StringBuilder();
                         tx.append(sdf.format(new java.util.Date(l.optLong("time")))).append(" | ").append(l.optString("userName")).append(" | ").append(l.optString("target")).append("【").append(lb).append("】");
                         if (chs != null) for (int ct=0; ct<chs.length(); ct++) {
@@ -1532,10 +1522,6 @@ public class FloatingWindowService extends Service {
                             } else if ("spawn".equals(f)) {
                                 tx.append("\n").append(c.getString(R.string.log_reset_time)).append(":").append(formatSeconds(ch.optLong("old"))).append("→").append(formatSeconds(ch.optLong("new")));
                             }
-                        }
-                        if ("add".equals(a)) {
-                            long rt = l.optLong("refreshTime", 0); if (rt > 0) tx.append("\n").append(c.getString(R.string.log_end_time)).append(":").append(formatFloatTime(rt));
-                            long sp = l.optLong("spawn", 0); if (sp > 0) tx.append("\n").append(c.getString(R.string.log_reset_time)).append(":").append(formatSeconds(sp));
                         }
                         if ("delete".equals(a)) {
                             long rt = l.optLong("refreshTime", 0); if (rt > 0) tx.append("\n").append(c.getString(R.string.log_end_time)).append(":").append(formatFloatTime(rt));

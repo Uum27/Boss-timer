@@ -191,6 +191,21 @@ public class CloudHelper {
         return request("GET", API_PREFIX + "/getLogs?roomId=" + encodeURI(roomId) + "&userId=" + encodeURI(userId), null);
     }
 
+    public String addLog(String roomId, String userId, String userName, String action, String target, String extraJson) throws Exception {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"roomId\":\"").append(escapeJson(roomId))
+          .append("\",\"userId\":\"").append(escapeJson(userId))
+          .append("\",\"userName\":\"").append(escapeJson(userName))
+          .append("\",\"action\":\"").append(escapeJson(action))
+          .append("\",\"target\":\"").append(escapeJson(target != null ? target : ""))
+          .append("\",\"time\":").append(System.currentTimeMillis());
+        if (extraJson != null && !extraJson.isEmpty()) {
+            sb.append(",").append(extraJson);
+        }
+        sb.append("}");
+        return request("POST", API_PREFIX + "/addLog", sb.toString());
+    }
+
     private String escapeJson(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");

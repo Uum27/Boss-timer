@@ -203,6 +203,14 @@ public class MainActivity extends AppCompatActivity {
             headerDelete.setTextColor(show ? 0xFF2196F3 : 0xFF333333);
         });
 
+        TextView headerEdit = findViewById(R.id.header_edit);
+        headerEdit.setOnClickListener(v -> {
+            if (dataManager.isSharedMode() && dataManager.isShowingSharedData()
+                    && (dataManager.isOwner() || "super_admin".equals(dataManager.getMyRole()))) {
+                showFloatBatchDialog();
+            }
+        });
+
         addButton.setOnClickListener(v -> showInputDialog());
 
         Intent bossServiceIntent = new Intent(this, TimerService.class);
@@ -310,7 +318,8 @@ public class MainActivity extends AppCompatActivity {
         headerFavIcon.setOnClickListener(v -> toggleMainFav());
         headerFavText.setOnClickListener(v -> toggleMainFav());
         headerText.setOnClickListener(v -> {
-            if (dataManager.isSharedMode() && dataManager.isShowingSharedData() && dataManager.isOwner()) {
+            if (dataManager.isSharedMode() && dataManager.isShowingSharedData()
+                    && (dataManager.isOwner() || "super_admin".equals(dataManager.getMyRole()))) {
                 showHeaderPopupMenu(v);
             }
         });
@@ -443,12 +452,24 @@ public class MainActivity extends AppCompatActivity {
         row.addView(tv);
 
         boolean canManage = "owner".equals(role) || "super_admin".equals(role) || "admin".equals(role);
-        if (idx >= 0 && rooms != null && canManage) {
+        if (canManage) {
             Button mgrBtn = new Button(this);
             mgrBtn.setText(R.string.manage_room_title_simple);
-            mgrBtn.setOnClickListener(v -> {
-                try { showManageRoomDialog(rooms.getJSONObject(idx), role); } catch (Exception ignored) {}
-            });
+            if (idx >= 0 && rooms != null) {
+                mgrBtn.setOnClickListener(v -> {
+                    try { showManageRoomDialog(rooms.getJSONObject(idx), role); } catch (Exception ignored) {}
+                });
+            } else {
+                mgrBtn.setOnClickListener(v -> {
+                    try {
+                        JSONObject roomObj = new JSONObject();
+                        roomObj.put("roomId", rid);
+                        roomObj.put("roomName", name);
+                        roomObj.put("hasPassword", !pwd.isEmpty());
+                        showManageRoomDialog(roomObj, role);
+                    } catch (Exception ignored) {}
+                });
+            }
             mgrBtn.setTextSize(12);
             mgrBtn.setMinWidth(0);
             mgrBtn.setPadding(12, 4, 12, 4);
@@ -584,6 +605,11 @@ public class MainActivity extends AppCompatActivity {
         nameInput.setText(roomName);
         pwdInput.setHint(hasPwd ? R.string.room_pwd_keep : R.string.room_pwd_set);
         pwdInput.setText("");
+
+        if ("admin".equals(role)) {
+            nameInput.setEnabled(false);
+            saveBtn.setVisibility(View.GONE);
+        }
 
         if (!isOwner && !isSuperAdmin) {
             pwdInput.setVisibility(View.GONE);
@@ -1872,6 +1898,94 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    private void showFloatBatchDialog() {
+        java.util.List<RowData> allBosses = dataManager.getAllBosses();
+        if (allBosses.isEmpty()) {
+            Toast.makeText(this, R.string.my_rooms_empty, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(16, 8, 16, 8);
+
+        LinearLayout btnRow = new LinearLayout(this);
+        btnRow.setOrientation(LinearLayout.HORIZONTAL);
+        btnRow.setPadding(0, 0, 0, 8);
+
+        Button selectAllBtn = new Button(this);
+        selectAllBtn.setText(R.string.float_batch_select_all);
+        selectAllBtn.setTextSize(12);
+        btnRow.addView(selectAllBtn);
+
+        Button deselectAllBtn = new Button(this);
+        deselectAllBtn.setText(R.string.float_batch_deselect_all);
+        deselectAllBtn.setTextSize(12);
+        btnRow.addView(deselectAllBtn);
+
+        root.addView(btnRow);
+
+        LinearLayout listLayout = new LinearLayout(this);
+        listLayout.setOrientation(LinearLayout.VERTICAL);
+
+        java.util.List<CheckBox> checkBoxes = new java.util.ArrayList<>();
+        for (RowData data : allBosses) {
+            CheckBox cb = new CheckBox(this);
+            cb.setText(data.text1);
+            cb.setChecked(data.showInFloat);
+            cb.setTextSize(15);
+            cb.setPadding(4, 8, 4, 8);
+            listLayout.addView(cb);
+            checkBoxes.add(cb);
+        }
+
+        ScrollView sv = new ScrollView(this);
+        sv.setLayoutParams(new LinearLayout.LayoutParams(-1, 0, 1));
+        sv.addView(listLayout);
+        root.addView(sv);
+
+        selectAllBtn.setOnClickListener(v -> {
+            for (CheckBox cb : checkBoxes) cb.setChecked(true);
+        });
+        deselectAllBtn.setOnClickListener(v -> {
+            for (CheckBox cb : checkBoxes) cb.setChecked(false);
+        });
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.float_batch_title)
+                .setView(root)
+                .setPositiveButton(R.string.float_batch_apply, (d, w) -> {
+                    StringBuilder changedNames = new StringBuilder();
+                    for (int i = 0; i < allBosses.size(); i++) {
+                        RowData data = allBosses.get(i);
+                        boolean newVal = checkBoxes.get(i).isChecked();
+                        if (data.showInFloat != newVal) {
+                            data.showInFloat = newVal;
+                            if (dataManager.isShowingSharedData()) {
+                                dataManager.editBossShared(data);
+                            } else {
+                                dataManager.editBoss(data);
+                            }
+                            if (changedNames.length() > 0) changedNames.append(",");
+                            changedNames.append(data.text1);
+                        }
+                    }
+                    if (changedNames.length() > 0) {
+                        adapter.updateData(dataManager.getAllBosses());
+                        EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, (RowData) null));
+                        Toast.makeText(MainActivity.this, R.string.edit_time_success, Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton(R.string.dialog_button_cancel, null)
+                .create();
+        dialog.show();
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setLayout((int)(getResources().getDisplayMetrics().widthPixels * 0.9),
+                    (int)(getResources().getDisplayMetrics().heightPixels * 0.7));
+        }
+    }
+
     private void showHeaderPopupMenu(View anchor) {
         TextView tv = new TextView(this);
         tv.setText(getString(R.string.server_restart));
@@ -1901,6 +2015,7 @@ public class MainActivity extends AppCompatActivity {
     private void performServerRestart() {
         java.util.List<RowData> bosses = dataManager.getAllBosses();
         long now = System.currentTimeMillis();
+        StringBuilder bossListJson = new StringBuilder();
         for (RowData data : bosses) {
             if (data.autoReset) continue;
             if (data.decreasingMode) {
@@ -1909,11 +2024,24 @@ public class MainActivity extends AppCompatActivity {
                 data.initialSpawnTime = 0;
             }
             data.startTime = now - data.spawnTime * 1000;
-            data.isNotified = false;
-            dataManager.editBossShared(data);
+            data.isNotified = true;
+            dbHelper.editBoss(data);
+            if (bossListJson.length() > 0) bossListJson.append(",");
+            bossListJson.append("{\"name\":\"").append(escapeJson(data.text1))
+                .append("\",\"endTime\":").append(data.startTime + data.spawnTime * 1000)
+                .append(",\"spawn\":").append(data.spawnTime)
+                .append(",\"decreasing\":").append(data.decreasingMode)
+                .append("}");
         }
+        dataManager.refreshCache();
+        dataManager.addRestartLog(bossListJson.toString());
         adapter.updateData(dataManager.getAllBosses());
         EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.SYNC_COMPLETED, (RowData) null));
         Toast.makeText(this, R.string.edit_time_success, Toast.LENGTH_SHORT).show();
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

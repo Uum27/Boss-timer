@@ -398,6 +398,30 @@ public class DataManager {
         }
     }
 
+    public void addRestartLog(String bossListJson) {
+        executor.execute(() -> {
+            try {
+                cloudHelper.addLog(currentRoomId, myUserId, getUserName(), "restart", "",
+                        "\"bosses\":[" + bossListJson + "]");
+            } catch (Exception e) { Log.e(TAG, "addRestartLog failed", e); }
+        });
+    }
+
+    public void addAutoLog(long id, long startTime, long spawnTime) {
+        RowData data = findCachedById(id);
+        if (data == null || data.roomId == null) return;
+        long endTime = startTime + spawnTime * 1000;
+        dbHelper.updateBossStartTime(id, startTime);
+        final String bossName = data.text1;
+        final String roomId = data.roomId;
+        executor.execute(() -> {
+            try {
+                cloudHelper.addLog(roomId, myUserId, "", "auto", bossName,
+                        "\"spawn\":" + spawnTime + ",\"refreshTime\":" + endTime);
+            } catch (Exception e) { Log.e(TAG, "addAutoLog failed", e); }
+        });
+    }
+
     private void pushAddBoss(RowData data) {
         long savedStartTime = data.startTime;
         executor.execute(() -> {
@@ -651,7 +675,7 @@ public class DataManager {
 
     // ---- cache ----
 
-    private void refreshCache() {
+    public void refreshCache() {
         List<RowData> all = new ArrayList<>();
         all.addAll(dbHelper.getAllBosses());
         if (isSharedMode && currentRoomId != null) {

@@ -102,7 +102,17 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         });
 
         dataList = dataList_sorted;
-        for (RowData d : dataList) d.setSpawnTime(context);
+        for (RowData d : dataList) {
+            d.setSpawnTime(context);
+            long elapsed = d.spawnTime - ((System.currentTimeMillis() - d.startTime) / 1000);
+            if (elapsed >= 3600) {
+                d.text3 = String.format(Locale.getDefault(), "%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60);
+            } else if (elapsed >= 0) {
+                d.text3 = String.format(Locale.getDefault(), "%02d:%02d", (elapsed % 3600) / 60, elapsed % 60);
+            } else {
+                d.text3 = "00:00";
+            }
+        }
         notifyDataSetChanged();
     }
 
@@ -128,7 +138,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
                     for (int i = 0; i < dataList.size(); i++) {
                         RowData data = dataList.get(i);
                         long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
-                        if (elapsedSeconds >= 0) {
+                        if (elapsedSeconds > 0) {
                             // 更新剩余时间（text3）
                             String newTimeText;
                             if (elapsedSeconds / 3600 > 0) {
@@ -158,20 +168,25 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
                         } else if (data.autoReset && data.spawnTime > 0) {
                             // 自动重置
                             long currentTime = System.currentTimeMillis();
-                            data.startTime = data.startTime + data.spawnTime * 1000;
-                            while (data.startTime + data.spawnTime * 1000 < currentTime) {
-                                data.startTime = data.startTime + data.spawnTime * 1000;
+                            long cycle = data.spawnTime * 1000;
+                            long cycles = (currentTime - data.startTime) / cycle;
+                            data.startTime = data.startTime + cycles * cycle;
+                            while (data.startTime + cycle <= currentTime) {
+                                data.startTime = data.startTime + cycle;
                             }
-                            // 使用带 Context 的方法更新 text2
                             data.setSpawnTime(context);
-                            data.isNotified = false;
-                            if (!isServerRunning) {
-                                if (dataManager.isShowingSharedData() && data.docId != null) {
-                                    dataManager.resetBossShared(data.id, data.startTime);
-                                } else {
-                                    dataManager.resetBossStartTime(data.id, data.startTime);
-                                }
+                            if (dataManager.isShowingSharedData() && data.docId != null) {
+                                dataManager.resetBossShared(data.id, data.startTime);
+                            } else {
+                                dataManager.resetBossStartTime(data.id, data.startTime);
                             }
+                            long newElapsed = data.spawnTime - ((currentTime - data.startTime) / 1000);
+                            if (newElapsed >= 3600) {
+                                data.text3 = String.format(Locale.getDefault(), "%02d:%02d:%02d", newElapsed / 3600, (newElapsed % 3600) / 60, newElapsed % 60);
+                            } else {
+                                data.text3 = String.format(Locale.getDefault(), "%02d:%02d", (newElapsed % 3600) / 60, newElapsed % 60);
+                            }
+                            dataManager.addAutoLog(data.id, data.startTime, data.spawnTime);
                             notifyItemChanged(i);
                         } else {
                             // 已过期且不自动重置，显示“已刷新”

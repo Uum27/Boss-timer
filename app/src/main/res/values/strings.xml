@@ -59,7 +59,7 @@
     <string name="dialog_button_cancel">取消</string>
 
     <string name="author_dialog_title">作者声明</string>
-    <string name="author_statement">本应用用于Boss计时。\n\n【数据安全】\n本地模式：数据仅保存在本机。\n共享模式：数据通过云端同步。\n\n【共享模式】\n1. 点击底部"共享"按钮\n2. 首次需输入授权码\n3. 输入3位房间号+密码加入，或创建新房间\n4. 点击蓝色标题栏人员名修改个人名称\n\n【权限】\n房主：全部权限（可设超管）\n超管：同房主全部权限\n管理员：可修改/重置\n成员：仅查看\n\n【悬浮窗】\n底部 共享｜最小化｜房间\n点"共享"切换本地/共享视图\n切换按钮带红点●表示另一侧有提醒\n点"房间"查看信息或房间列表\n蓝色栏左侧☆可收藏房间\n房间信息内可点击"日志"查看操作记录\n点击刷新时间切换显示 时分→时分秒\n\n【防御误触】\n悬浮窗重置后锁定所有按钮3秒\n主页面重置/删除按钮默认隐藏\n点击标题栏"重置"或"删除"才显示\n最小化后双击悬浮窗可锁定位置\n\n【主页面】\n蓝色标题栏点击人员名→修改个人名称\n点击Boss名称→修改名称和重置周期\n点击刷新时间→修改死亡/刷新时间\n点击剩余时间→修改剩余时间\n\n【递减模式】\n随死亡次数减少刷新时间\n点击名称→递减设置，设置减少时间和次数\n重置时自动计算，名称前显示▼标记\n\n【同步】\n房主/超管操作即时推送云端\n每60秒自动检查版本号\n版本变化时下载更新\n\n【三语】\n搜索框右侧🌐切换中英韩。\n\n【新功能】\n服务器重启：房主/超管点击主页面蓝色"共享房间"标题→选择"服务器重启"→确认后归零当前房间所有普通boss时间\n跨房间提醒：悬浮窗定时扫描其他房间boss，临近刷新时系统通知提醒，房间按钮显示红点●\n切换房间：悬浮窗房间信息内点击"切换房间"，显示有通知的房间列表，点击即可切换\n\n【联系】\nQQ: 1781391759 / 810026494\nKakao: Uum27</string>
+    <string name="author_statement">本应用用于Boss计时。\n\n【数据安全】\n本地模式：数据仅保存在本机。\n共享模式：数据通过云端同步。\n\n【共享模式】\n1. 点击底部"共享"按钮\n2. 首次需输入授权码\n3. 输入3位房间号+密码加入，或创建新房间\n4. 点击蓝色标题栏人员名修改个人名称\n\n【权限】\n房主：全部权限（可设超管）\n超管：同房主全部权限\n管理员：可修改/重置\n成员：仅查看\n\n【悬浮窗】\n底部 共享｜最小化｜房间\n点"共享"切换本地/共享视图\n切换按钮带红点●表示另一侧有提醒\n点"房间"查看信息或房间列表\n蓝色栏左侧☆可收藏房间\n房间信息内可点击"日志"查看操作记录\n点击刷新时间切换显示 时分→时分秒\n\n【防御误触】\n悬浮窗重置后锁定所有按钮3秒\n主页面重置/删除按钮默认隐藏\n点击标题栏"重置"或"删除"才显示\n最小化后双击悬浮窗可锁定位置\n\n【主页面】\n蓝色标题栏点击人员名→修改个人名称\n点击Boss名称→修改名称和重置周期\n点击刷新时间→修改死亡/刷新时间\n点击剩余时间→修改剩余时间\n\n【递减模式】\n随死亡次数减少刷新时间\n点击名称→递减设置，设置减少时间和次数\n重置时自动计算，名称前显示▼标记\n\n【同步】\n房主/超管操作即时推送云端\n每60秒自动检查版本号\n版本变化时下载更新\n\n【三语】\n搜索框右侧🌐切换中英韩。\n\n【新功能】\n服务器重启：房主/超管点击主页面蓝色"共享房间"标题→选择"服务器重启"→确认后归零当前房间所有普通boss时间\n跨房间提醒：悬浮窗定时扫描其他房间boss，临近刷新时系统通知提醒，房间按钮显示红点●\n切换房间：悬浮窗房间信息内点击"切换房间"，显示有通知的房间列表，点击即可切换\n批量悬浮窗：房主/超管点击主页面标题栏"修改"列→批量勾选boss在悬浮窗中的显示/隐藏\n\n【联系】\nQQ: 1781391759 / 810026494\nKakao: Uum27</string>
 
     <string name="donate_title">感谢支持</string>
     <string name="donate_subtitle">扫码打赏</string>
@@ -225,6 +225,7 @@
     <string name="log_name">名称</string>
     <string name="log_notify">提前提醒</string>
     <string name="log_auto_reset">自动</string>
+    <string name="log_auto_reset_toggle">自动重置</string>
     <string name="log_show_float">悬浮窗</string>
     <string name="log_spawn">刷新周期</string>
     <string name="max_bosses_reached">每房间最多20个Boss</string>
@@ -242,4 +243,18 @@
     <string name="no_more_tip">不再提示</string>
     <string name="language_restart">切换语言后需要重启软件，确定继续？</string>
     <string name="expansion_code_tip">扩容码：810026494（解除房间和Boss数量限制）</string>
+
+    <string name="log_rename">改名</string>
+    <string name="log_permission">权限</string>
+    <string name="log_remind">提醒</string>
+    <string name="log_restart">重启</string>
+    <string name="log_float_batch">悬浮窗</string>
+    <string name="log_advance_remind">提前提醒</string>
+    <string name="log_operator">操作人</string>
+    <string name="log_to">→</string>
+    <string name="float_batch_title">批量管理悬浮窗显示</string>
+    <string name="float_batch_select_all">全选</string>
+    <string name="float_batch_deselect_all">取消全选</string>
+    <string name="float_batch_apply">应用</string>
+    <string name="header_edit_title">批量悬浮窗</string>
 </resources>
