@@ -90,6 +90,39 @@ public class UiHelper {
                 String u = l.optString("userName","").toLowerCase(), t = l.optString("target","").toLowerCase();
 
                 if ("restart".equals(a) && !isOwner) continue;
+                if ("restart".equals(a)) {
+                    StringBuilder hd = new StringBuilder();
+                    hd.append(sdf.format(new Date(l.optLong("time")))).append(" ");
+                    hd.append(l.optString("userName")).append(" 【").append(ctx.getString(R.string.log_restart)).append("】");
+
+                    if (!filter.isEmpty() && !hd.toString().toLowerCase().contains(filter)
+                            && !("restart"+hd.toString()).toLowerCase().contains(filter)) continue;
+
+                    TextView htv = new TextView(ctx); htv.setTextSize(13); htv.setPadding(12,8,12,8); htv.setText(hd.toString()); li.addView(htv);
+
+                    JSONArray bosses = l.optJSONArray("bosses");
+                    if (bosses != null) {
+                        for (int b = 0; b < bosses.length(); b++) {
+                            if (b > 0) {
+                                View separator = new View(ctx);
+                                separator.setLayoutParams(new LinearLayout.LayoutParams(-1, 1));
+                                separator.setBackgroundColor(0x40D0D0D0);
+                                li.addView(separator);
+                            }
+                            JSONObject boss = bosses.getJSONObject(b);
+                            StringBuilder bTx = new StringBuilder();
+                            bTx.append("  ").append(boss.optString("name"));
+                            bTx.append("\n  ").append(ctx.getString(R.string.log_end_time)).append(": ").append(formatTime(boss.optLong("endTime")));
+                            if (boss.optBoolean("decreasing", false)) {
+                                bTx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(boss.optLong("spawn")));
+                            }
+                            TextView btv = new TextView(ctx); btv.setTextSize(13); btv.setPadding(12,8,12,8); btv.setText(bTx.toString()); li.addView(btv);
+                        }
+                    }
+
+                    View dv = new View(ctx); dv.setLayoutParams(new LinearLayout.LayoutParams(-1,1)); dv.setBackgroundColor(0x80D0D0D0); li.addView(dv);
+                    continue;
+                }
 
                 StringBuilder tx = new StringBuilder();
                 tx.append(sdf.format(new Date(l.optLong("time")))).append(" ");
@@ -116,17 +149,6 @@ public class UiHelper {
                     if (chs != null && chs.length() > 0) {
                         JSONObject ch = chs.getJSONObject(0);
                         tx.append("\n  ").append(ctx.getString(R.string.log_permission)).append(": ").append(ch.optString("old","")).append(ctx.getString(R.string.log_to)).append(ch.optString("new",""));
-                    }
-                } else if ("restart".equals(a)) {
-                    tx.append(l.optString("userName")).append(" 【").append(ctx.getString(R.string.log_restart)).append("】");
-                    JSONArray bosses = l.optJSONArray("bosses");
-                    if (bosses != null) for (int b=0; b<bosses.length(); b++) {
-                        JSONObject boss = bosses.getJSONObject(b);
-                        tx.append("\n  ").append(boss.optString("name"));
-                        tx.append("\n  ").append(ctx.getString(R.string.log_end_time)).append(": ").append(formatTime(boss.optLong("endTime")));
-                        if (boss.optBoolean("decreasing", false)) {
-                            tx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(boss.optLong("spawn")));
-                        }
                     }
                 } else if ("auto".equals(a)) {
                     tx.append(l.optString("target")).append(" 【").append(ctx.getString(R.string.log_auto_reset)).append("】");
