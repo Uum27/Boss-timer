@@ -112,9 +112,15 @@ public class UiHelper {
                             JSONObject boss = bosses.getJSONObject(b);
                             StringBuilder bTx = new StringBuilder();
                             bTx.append("  ").append(boss.optString("name"));
-                            bTx.append("\n  ").append(ctx.getString(R.string.log_end_time)).append(": ").append(formatTime(boss.optLong("endTime")));
+                            long oldEnd = boss.optLong("oldEndTime", 0);
+                            if (oldEnd > 0) {
+                                bTx.append("\n  ").append(ctx.getString(R.string.log_before_restart)).append(": ").append(formatTime(oldEnd));
+                            }
                             if (boss.optBoolean("decreasing", false)) {
                                 bTx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(boss.optLong("spawn")));
+                                bTx.append("\n  ").append(ctx.getString(R.string.log_decreasing_settings))
+                                    .append(": ").append(formatSeconds(boss.optLong("decreasingSeconds")))
+                                    .append(" | ").append(boss.optLong("decreasingCount"));
                             }
                             TextView btv = new TextView(ctx); btv.setTextSize(13); btv.setPadding(12,8,12,8); btv.setText(bTx.toString()); li.addView(btv);
                         }
@@ -137,6 +143,11 @@ public class UiHelper {
                     tx.append(l.optString("userName")).append(" | ").append(l.optString("target")).append(" 【").append(ctx.getString(R.string.log_delete)).append("】");
                     long rt = l.optLong("refreshTime",0); if (rt>0) tx.append("\n  ").append(ctx.getString(R.string.log_end_time)).append(": ").append(formatTime(rt));
                     long sp = l.optLong("spawn",0); if (sp>0) tx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(sp));
+                    if (l.optBoolean("decreasing", false)) {
+                        tx.append("\n  ").append(ctx.getString(R.string.log_decreasing_settings))
+                            .append(": ").append(formatSeconds(l.optLong("decreasingSeconds")))
+                            .append(" | ").append(l.optLong("decreasingCount"));
+                    }
                 } else if ("kick".equals(a)) {
                     tx.append(l.optString("userName")).append(" | ").append(l.optString("target")).append(" 【").append(ctx.getString(R.string.log_kick)).append("】");
                 } else if ("join".equals(a)) {
@@ -182,16 +193,41 @@ public class UiHelper {
                         lb = ctx.getString(R.string.log_edit);
                     }
                     tx.append(l.optString("userName")).append(" | ").append(l.optString("target")).append(" 【").append(lb).append("】");
-                    if (chs != null) for (int c=0; c<chs.length(); c++) {
-                        JSONObject ch = chs.getJSONObject(c); String f = ch.optString("field");
-                        if ("startTime".equals(f)) {
-                            tx.append("\n  ").append(ctx.getString(R.string.log_end_time)).append(": ").append(formatTime(ch.optLong("oldRefresh"))).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(formatTime(ch.optLong("newRefresh")));
-                            long sp = ch.optLong("spawn",0); if (sp>0) tx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(sp));
-                        } else if ("name".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_name)).append(": ").append(ch.optString("old")).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(ch.optString("new"));
-                        else if ("notifyTime".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_advance_remind)).append(": ").append(formatSeconds(ch.optLong("old"))).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(formatSeconds(ch.optLong("new")));
-                        else if ("autoReset".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_auto_reset)).append(": ").append(ch.optBoolean("old")?ctx.getString(R.string.yes):ctx.getString(R.string.no)).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(ch.optBoolean("new")?ctx.getString(R.string.yes):ctx.getString(R.string.no));
-                        else if ("showInFloat".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_show_float)).append(": ").append(ch.optBoolean("old")?ctx.getString(R.string.yes):ctx.getString(R.string.no)).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(ch.optBoolean("new")?ctx.getString(R.string.yes):ctx.getString(R.string.no));
-                        else if ("spawn".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(ch.optLong("old"))).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(formatSeconds(ch.optLong("new")));
+                    if (chs != null) {
+                        JSONObject dmCh = null, dcCh = null;
+                        for (int c = 0; c < chs.length(); c++) {
+                            String f = chs.optJSONObject(c).optString("field");
+                            if ("decreasingMode".equals(f)) dmCh = chs.getJSONObject(c);
+                            if ("decreasingCount".equals(f)) dcCh = chs.getJSONObject(c);
+                        }
+                        if (dmCh != null || dcCh != null) {
+                            tx.append("\n  ");
+                            if (dmCh != null) {
+                                tx.append(ctx.getString(R.string.log_decreasing_mode)).append(": ")
+                                    .append(dmCh.optBoolean("old") ? ctx.getString(R.string.yes) : ctx.getString(R.string.no))
+                                    .append(" ").append(ctx.getString(R.string.log_to)).append(" ")
+                                    .append(dmCh.optBoolean("new") ? ctx.getString(R.string.yes) : ctx.getString(R.string.no));
+                            }
+                            if (dmCh != null && dcCh != null) tx.append("  |  ");
+                            if (dcCh != null) {
+                                tx.append(ctx.getString(R.string.log_decreasing_count)).append(": ")
+                                    .append(dcCh.optLong("old")).append(" ").append(ctx.getString(R.string.log_to)).append(" ")
+                                    .append(dcCh.optLong("new"));
+                            }
+                        }
+                        for (int c = 0; c < chs.length(); c++) {
+                            JSONObject ch = chs.getJSONObject(c); String f = ch.optString("field");
+                            if ("decreasingMode".equals(f) || "decreasingCount".equals(f)) continue;
+                            if ("startTime".equals(f)) {
+                                tx.append("\n  ").append(ctx.getString(R.string.log_end_time)).append(": ").append(formatTime(ch.optLong("oldRefresh"))).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(formatTime(ch.optLong("newRefresh")));
+                                long sp = ch.optLong("spawn",0); if (sp>0) tx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(sp));
+                            } else if ("name".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_name)).append(": ").append(ch.optString("old")).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(ch.optString("new"));
+                            else if ("notifyTime".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_advance_remind)).append(": ").append(formatSeconds(ch.optLong("old"))).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(formatSeconds(ch.optLong("new")));
+                            else if ("autoReset".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_auto_reset)).append(": ").append(ch.optBoolean("old")?ctx.getString(R.string.yes):ctx.getString(R.string.no)).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(ch.optBoolean("new")?ctx.getString(R.string.yes):ctx.getString(R.string.no));
+                            else if ("showInFloat".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_show_float)).append(": ").append(ch.optBoolean("old")?ctx.getString(R.string.yes):ctx.getString(R.string.no)).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(ch.optBoolean("new")?ctx.getString(R.string.yes):ctx.getString(R.string.no));
+                            else if ("spawn".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(ch.optLong("old"))).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(formatSeconds(ch.optLong("new")));
+                            else if ("decreasingSeconds".equals(f)) tx.append("\n  ").append(ctx.getString(R.string.log_decreasing_time)).append(": ").append(formatSeconds(ch.optLong("old"))).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(formatSeconds(ch.optLong("new")));
+                        }
                     }
                 }
 

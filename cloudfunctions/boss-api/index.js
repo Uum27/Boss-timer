@@ -393,6 +393,9 @@ async function updateBoss(params) {
   if (boss.autoReset !== undefined && boss.autoReset !== old.autoReset) changes.push({ field: 'autoReset', old: old.autoReset, new: boss.autoReset });
   if (boss.spawn !== undefined && boss.spawn !== old.spawn) changes.push({ field: 'spawn', old: old.spawn || 0, new: boss.spawn });
   if (boss.showInFloat !== undefined && boss.showInFloat !== old.showInFloat) changes.push({ field: 'showInFloat', old: !!old.showInFloat, new: !!boss.showInFloat });
+  if (boss.decreasingMode !== undefined && boss.decreasingMode !== old.decreasingMode) changes.push({ field: 'decreasingMode', old: !!old.decreasingMode, new: !!boss.decreasingMode });
+  if (boss.decreasingSeconds !== undefined && boss.decreasingSeconds !== old.decreasingSeconds) changes.push({ field: 'decreasingSeconds', old: old.decreasingSeconds || 0, new: boss.decreasingSeconds });
+  if (boss.decreasingCount !== undefined && boss.decreasingCount !== old.decreasingCount) changes.push({ field: 'decreasingCount', old: old.decreasingCount || 0, new: boss.decreasingCount });
   if (changes.length > 0) {
     try { await db.collection('logs').add({
       roomId, userId, userName: member.name, action: 'edit', target: bossName || docId,
@@ -422,6 +425,9 @@ async function deleteBoss(params) {
     roomId, userId, userName: member.name, action: 'delete',
     target: b.name || docId, spawn: b.spawn || 0,
     refreshTime: (b.startTime || 0) + (b.spawn || 0) * 1000, time: Date.now(),
+    decreasing: b.decreasingMode || false,
+    decreasingSeconds: b.decreasingSeconds || 0,
+    decreasingCount: b.decreasingCount || 0,
   }); } catch(e) {}
 
   return jsonResp({ version: room.version });

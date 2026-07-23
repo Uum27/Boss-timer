@@ -2018,6 +2018,7 @@ public class MainActivity extends AppCompatActivity {
         StringBuilder bossListJson = new StringBuilder();
         for (RowData data : bosses) {
             if (data.autoReset) continue;
+            long oldEndTime = data.startTime + data.spawnTime * 1000;
             if (data.decreasingMode) {
                 data.deathCount = 0;
                 if (data.initialSpawnTime > 0) data.spawnTime = data.initialSpawnTime;
@@ -2029,8 +2030,11 @@ public class MainActivity extends AppCompatActivity {
             if (bossListJson.length() > 0) bossListJson.append(",");
             bossListJson.append("{\"name\":\"").append(escapeJson(data.text1))
                 .append("\",\"endTime\":").append(data.startTime + data.spawnTime * 1000)
+                .append(",\"oldEndTime\":").append(oldEndTime)
                 .append(",\"spawn\":").append(data.spawnTime)
                 .append(",\"decreasing\":").append(data.decreasingMode)
+                .append(",\"decreasingSeconds\":").append(data.decreasingSeconds)
+                .append(",\"decreasingCount\":").append(data.decreasingCount)
                 .append("}");
         }
         dataManager.refreshCache();

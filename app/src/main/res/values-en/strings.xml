@@ -214,6 +214,8 @@
     <string name="log_unban">Unban</string>
     <string name="log_join">Join</string>
     <string name="log_end_time">End Time</string>
+    <string name="log_before_restart">Before Restart</string>
+    <string name="log_decreasing_settings">Decreasing</string>
     <string name="log_reset_time">Reset Time</string>
     <string name="log_name">Name</string>
     <string name="log_notify">Notify</string>
@@ -221,6 +223,9 @@
     <string name="log_auto_reset_toggle">Auto Reset</string>
     <string name="log_show_float">Float</string>
     <string name="log_spawn">Spawn</string>
+    <string name="log_decreasing_mode">Decreasing Mode</string>
+    <string name="log_decreasing_time">Decreasing Time</string>
+    <string name="log_decreasing_count">Decreasing Count</string>
     <string name="max_bosses_reached">Max 20 bosses per room</string>
     <string name="cannot_edit_own_role">Cannot edit your own role</string>
     <string name="error_network">Network error, please try again</string>
