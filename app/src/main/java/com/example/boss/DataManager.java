@@ -37,6 +37,7 @@ public class DataManager {
     private DBHelper dbHelper;
     private CloudHelper cloudHelper;
     private List<RowData> cachedData = new ArrayList<>();
+    private java.util.Map<Long, Long> lastAutoLogTime = new java.util.HashMap<>();
     private Handler mainHandler;
     private SharedPreferences prefs;
 
@@ -388,13 +389,14 @@ public class DataManager {
     }
 
     public void resetBossShared(long id, long startTime) {
+        RowData data = findCachedById(id);
+        if (data != null && data.startTime == startTime) return;
         dbHelper.resetBossStartTime(id, startTime);
         refreshCache();
-        RowData data = findCachedById(id);
+        data = findCachedById(id);
         if (data != null) {
             data.startTime = startTime;
             data.isNotified = false;
-            editBossShared(data);
         }
     }
 
@@ -410,8 +412,12 @@ public class DataManager {
     public void addAutoLog(long id, long startTime, long spawnTime) {
         RowData data = findCachedById(id);
         if (data == null || data.roomId == null) return;
+        synchronized (lastAutoLogTime) {
+            Long lastTime = lastAutoLogTime.get(id);
+            if (lastTime != null && (System.currentTimeMillis() - lastTime) < 5000) return;
+            lastAutoLogTime.put(id, System.currentTimeMillis());
+        }
         long endTime = startTime + spawnTime * 1000;
-        dbHelper.updateBossStartTime(id, startTime);
         final String bossName = data.text1;
         final String roomId = data.roomId;
         executor.execute(() -> {

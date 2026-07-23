@@ -307,6 +307,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
             dataManager.setIsNotified(data.id, false);
             if (dataManager.isShowingSharedData() && data.docId != null) {
                 dataManager.resetBossShared(data.id, data.startTime);
+                dataManager.editBossShared(data);
             } else {
                 dataManager.resetBossStartTime(data.id, data.startTime);
             }
