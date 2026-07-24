@@ -88,6 +88,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView headerFavIcon;
     private TextView headerFavText;
     private TextView headerUserName;
+    private TextView headerReset;
+    private TextView headerDelete;
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -190,18 +192,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        TextView headerReset = findViewById(R.id.header_reset);
+        headerReset = findViewById(R.id.header_reset);
         headerReset.setOnClickListener(v -> {
             boolean show = !adapter.isShowResetButton();
             adapter.setShowResetButton(show);
             headerReset.setTextColor(show ? 0xFF2196F3 : 0xFF333333);
         });
 
-        TextView headerDelete = findViewById(R.id.header_delete);
+        headerDelete = findViewById(R.id.header_delete);
         headerDelete.setOnClickListener(v -> {
             boolean show = !adapter.isShowDeleteButton();
             adapter.setShowDeleteButton(show);
-            headerDelete.setTextColor(show ? 0xFF2196F3 : 0xFF333333);
+            headerDelete.setTextColor(show ? 0xFFE57373 : 0xFF333333);
         });
 
         TextView headerEdit = findViewById(R.id.header_edit);
@@ -868,6 +870,12 @@ public class MainActivity extends AppCompatActivity {
             sharedHeader.setVisibility(View.VISIBLE);
             sharedHeader.setBackgroundColor(0xFFF0F0F0);
         }
+        if (headerReset != null) {
+            headerReset.setTextColor(adapter.isShowResetButton() ? 0xFF2196F3 : 0xFF333333);
+        }
+        if (headerDelete != null) {
+            headerDelete.setTextColor(adapter.isShowDeleteButton() ? 0xFFE57373 : 0xFF333333);
+        }
     }
 
     private void showRoomDialog() {
@@ -1029,10 +1037,11 @@ public class MainActivity extends AppCompatActivity {
 
     // 添加对话框
     private void showInputDialog() {
+        boolean wasSharedMode = dataManager.isShowingSharedData();
         View dialogView = LayoutInflater.from(this).inflate(R.layout.input_information, null);
         EditText nameInput = dialogView.findViewById(R.id.input_name);
         TextView roomInfoView = dialogView.findViewById(R.id.dialog_room_info);
-        if (dataManager.isShowingSharedData()) {
+        if (wasSharedMode) {
             roomInfoView.setText(getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole())));
             roomInfoView.setTextColor(0xFF3F51B5);
         } else {
@@ -1096,7 +1105,7 @@ public class MainActivity extends AppCompatActivity {
                     data.notifyTime = notify;
                     data.autoReset = autoResetChecked;
                     data.showInFloat = showInFloatChecked;
-                    if (dataManager.isShowingSharedData()) {
+                    if (wasSharedMode) {
                         data.id = dataManager.insertBossShared(data);
                     } else {
                         data.id = dataManager.insertBoss(data);
@@ -1116,10 +1125,11 @@ public class MainActivity extends AppCompatActivity {
 
     // 完整编辑对话框
     private void showEditDialog(ItemAdapter adapter, int position) {
+        boolean wasSharedMode = dataManager.isShowingSharedData();
         View dialogView = LayoutInflater.from(this).inflate(R.layout.edit_information, null);
         EditText nameInput = dialogView.findViewById(R.id.edit_name);
         TextView roomInfoView2 = dialogView.findViewById(R.id.dialog_room_info);
-        if (dataManager.isShowingSharedData()) {
+        if (wasSharedMode) {
             roomInfoView2.setText(getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole())));
             roomInfoView2.setTextColor(0xFF3F51B5);
         } else {
@@ -1279,7 +1289,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     data.autoReset = autoResetChecked;
                     data.showInFloat = showInFloat.isChecked();
-                    if (dataManager.isShowingSharedData()) {
+                    if (wasSharedMode) {
                         dataManager.editBossShared(data);
                     } else {
                         dataManager.editBoss(data);
@@ -1319,6 +1329,7 @@ public class MainActivity extends AppCompatActivity {
 
     // ★ 修改名称和刷新周期（不重置开始时间，保留当前周期数值）
     private void showEditNameDialog(ItemAdapter adapter, int position) {
+        boolean wasSharedMode = dataManager.isShowingSharedData();
         RowData data = adapter.dataList.get(position);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_name, null);
 
@@ -1346,7 +1357,7 @@ public class MainActivity extends AppCompatActivity {
 
         TextView roomInfoV = dialogView.findViewById(R.id.dialog_room_info);
         if (roomInfoV != null) {
-            if (dataManager.isShowingSharedData()) {
+            if (wasSharedMode) {
                 roomInfoV.setText(getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole())));
                 roomInfoV.setTextColor(0xFF3F51B5);
             } else {
@@ -1402,7 +1413,7 @@ public class MainActivity extends AppCompatActivity {
                                 remaining / 60, remaining % 60);
                     }
 
-                    if (dataManager.isShowingSharedData()) {
+                    if (wasSharedMode) {
                         if (!spawnChanged && !oldName.equals(data.text1)) {
                             dataManager.renameBossAndSync(data, oldName, data.text1);
                         } else {
@@ -1430,7 +1441,7 @@ public class MainActivity extends AppCompatActivity {
             data.isNotified = false;
             data.text2 = getString(R.string.refreshed);
             data.text3 = "00:00";
-            if (dataManager.isShowingSharedData() && data.docId != null) {
+            if (wasSharedMode && data.docId != null) {
                 dataManager.editBossShared(data);
             } else {
                 dbHelper.editBoss(data);
@@ -1453,6 +1464,7 @@ public class MainActivity extends AppCompatActivity {
 
     // ★ 修改时间对话框（死亡时间 + 下一次刷新周期）
     private void showEditTimeDialog(ItemAdapter adapter, int position) {
+        boolean wasSharedMode = dataManager.isShowingSharedData();
         RowData data = adapter.dataList.get(position);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_time, null);
 
@@ -1473,7 +1485,7 @@ public class MainActivity extends AppCompatActivity {
         TextView roomInfoEt = dialogView.findViewById(R.id.dialog_room_info);
         if (roomInfoEt != null) {
             String infoText;
-            if (dataManager.isShowingSharedData()) {
+            if (wasSharedMode) {
                 infoText = getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole()));
                 roomInfoEt.setTextColor(0xFF3F51B5);
             } else {
@@ -1572,7 +1584,7 @@ public class MainActivity extends AppCompatActivity {
                             String.format(Locale.getDefault(), "%02d:%02d:%02d", remaining / 3600, (remaining % 3600) / 60, remaining % 60) :
                             String.format(Locale.getDefault(), "%02d:%02d", remaining / 60, remaining % 60);
 
-                    if (dataManager.isShowingSharedData()) {
+                    if (wasSharedMode) {
                         dataManager.editBossShared(data);
                     } else {
                         dataManager.editBoss(data);
@@ -1606,13 +1618,14 @@ public class MainActivity extends AppCompatActivity {
 
     // ★ 修改剩余时间对话框
     private void showEditRemainingDialog(ItemAdapter adapter, int position) {
+        boolean wasSharedMode = dataManager.isShowingSharedData();
         RowData data = adapter.dataList.get(position);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_remaining, null);
 
         TextView roomInfoEr = dialogView.findViewById(R.id.dialog_room_info);
         if (roomInfoEr != null) {
             String infoText;
-            if (dataManager.isShowingSharedData()) {
+            if (wasSharedMode) {
                 infoText = getString(R.string.shared_header, dataManager.getCurrentRoomId(), getRoleDisplay(dataManager.getMyRole()));
                 roomInfoEr.setTextColor(0xFF3F51B5);
             } else {
@@ -1659,12 +1672,12 @@ public class MainActivity extends AppCompatActivity {
                                     newRemaining / 60, newRemaining % 60);
                         }
                         data.setSpawnTime(this);
-                    if (dataManager.isShowingSharedData()) {
+                    if (wasSharedMode) {
                         dataManager.editBossShared(data);
                     } else {
                         dataManager.editBoss(data);
                     }
-                        EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, data));
+                    EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, data));
                         adapter.notifyDataSetChanged();
                     } else {
                         Toast.makeText(this, R.string.edit_remaining_invalid, Toast.LENGTH_SHORT).show();
@@ -1851,6 +1864,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showDecreaseDialog(ItemAdapter adapter, int position) {
+        boolean wasSharedMode = dataManager.isShowingSharedData();
         RowData data = adapter.dataList.get(position);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -1916,7 +1930,7 @@ public class MainActivity extends AppCompatActivity {
                 data.isNotified = false;
                 data.text2 = getString(R.string.refreshed);
                 data.text3 = "00:00";
-                if (dataManager.isShowingSharedData() && data.docId != null) {
+                if (wasSharedMode && data.docId != null) {
                     dataManager.editBossShared(data);
                 } else {
                     dbHelper.editBoss(data);
@@ -1954,6 +1968,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showFloatBatchDialog() {
+        boolean wasSharedMode = dataManager.isShowingSharedData();
         java.util.List<RowData> allBosses = dataManager.getAllBosses();
         if (allBosses.isEmpty()) {
             Toast.makeText(this, R.string.my_rooms_empty, Toast.LENGTH_SHORT).show();
@@ -2016,7 +2031,7 @@ public class MainActivity extends AppCompatActivity {
                         boolean newVal = checkBoxes.get(i).isChecked();
                         if (data.showInFloat != newVal) {
                             data.showInFloat = newVal;
-                            if (dataManager.isShowingSharedData()) {
+                            if (wasSharedMode) {
                                 dataManager.editBossShared(data);
                             } else {
                                 dataManager.editBoss(data);

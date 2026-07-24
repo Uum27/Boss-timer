@@ -40,8 +40,10 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     public String filteredString = "";
     private boolean hadRefreshedDay;
     private OnRowClickListener rowClickListener;
-    private boolean showResetButton = false;
-    private boolean showDeleteButton = false;
+    private boolean showResetButtonLocal = false;
+    private boolean showDeleteButtonLocal = false;
+    private boolean showResetButtonShared = false;
+    private boolean showDeleteButtonShared = false;
 
     public ItemAdapter(Context context) {
         this.context = context;
@@ -247,21 +249,29 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     }
 
     public void setShowResetButton(boolean show) {
-        this.showResetButton = show;
+        if (dataManager.isShowingSharedData()) {
+            this.showResetButtonShared = show;
+        } else {
+            this.showResetButtonLocal = show;
+        }
         notifyDataSetChanged();
     }
 
     public boolean isShowResetButton() {
-        return showResetButton;
+        return dataManager.isShowingSharedData() ? showResetButtonShared : showResetButtonLocal;
     }
 
     public void setShowDeleteButton(boolean show) {
-        this.showDeleteButton = show;
+        if (dataManager.isShowingSharedData()) {
+            this.showDeleteButtonShared = show;
+        } else {
+            this.showDeleteButtonLocal = show;
+        }
         notifyDataSetChanged();
     }
 
     public boolean isShowDeleteButton() {
-        return showDeleteButton;
+        return dataManager.isShowingSharedData() ? showDeleteButtonShared : showDeleteButtonLocal;
     }
 
     public void addRow(RowData data) {
@@ -329,7 +339,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         // 计算剩余时间用于颜色
         long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
         if (elapsedSeconds < data.notifyTime) {
-            holder.text3.setTextColor(context.getResources().getColor(android.R.color.holo_red_dark));
+            holder.text3.setTextColor(0xFFC0392B);
         } else {
             holder.text3.setTextColor(context.getResources().getColor(android.R.color.black));
         }
@@ -357,12 +367,12 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
 
         if (dataManager.isShowingSharedData()) {
             holder.editButton.setVisibility(dataManager.canEdit() ? View.VISIBLE : View.INVISIBLE);
-            holder.resetButton.setVisibility(showResetButton && dataManager.canReset() ? View.VISIBLE : View.INVISIBLE);
-            holder.deleteButton.setVisibility(showDeleteButton && dataManager.canDelete() ? View.VISIBLE : View.INVISIBLE);
+            holder.resetButton.setVisibility(isShowResetButton() && dataManager.canReset() ? View.VISIBLE : View.INVISIBLE);
+            holder.deleteButton.setVisibility(isShowDeleteButton() && dataManager.canDelete() ? View.VISIBLE : View.INVISIBLE);
         } else {
             holder.editButton.setVisibility(View.VISIBLE);
-            holder.resetButton.setVisibility(showResetButton ? View.VISIBLE : View.INVISIBLE);
-            holder.deleteButton.setVisibility(showDeleteButton ? View.VISIBLE : View.INVISIBLE);
+            holder.resetButton.setVisibility(isShowResetButton() ? View.VISIBLE : View.INVISIBLE);
+            holder.deleteButton.setVisibility(isShowDeleteButton() ? View.VISIBLE : View.INVISIBLE);
         }
 
         holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -407,7 +417,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
                 holder.text3.setText(data.text3);
                 long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
                 if (elapsedSeconds >= 0 && elapsedSeconds < data.notifyTime) {
-                    holder.text3.setTextColor(context.getResources().getColor(android.R.color.holo_red_dark));
+                    holder.text3.setTextColor(0xFFC0392B);
                 } else {
                     holder.text3.setTextColor(context.getResources().getColor(android.R.color.black));
                 }

@@ -192,7 +192,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
         }
 
         if (elapsedSeconds < data.notifyTime) {
-            holder.text3.setTextColor(context.getResources().getColor(android.R.color.holo_red_dark));
+            holder.text3.setTextColor(0xFFC0392B);
         } else {
             holder.text3.setTextColor(context.getResources().getColor(android.R.color.white));
         }
@@ -227,7 +227,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
                 holder.text3.setText(data.text3);
                 long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
                 if (elapsedSeconds >= 0 && elapsedSeconds < data.notifyTime) {
-                    holder.text3.setTextColor(context.getResources().getColor(android.R.color.holo_red_dark));
+                    holder.text3.setTextColor(0xFFC0392B);
                 } else {
                     holder.text3.setTextColor(context.getResources().getColor(android.R.color.white));
                 }

@@ -60,6 +60,7 @@
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
             android:src="@drawable/reset"
+            android:tint="#2196F3"
             android:layout_gravity="center_vertical"
             android:scaleType="centerInside" />
 
@@ -71,6 +72,7 @@
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
             android:src="@drawable/delete"
+            android:tint="#E57373"
             android:layout_gravity="center_vertical"
             android:scaleType="centerInside" />
 
