@@ -90,6 +90,7 @@ public class FloatingWindowService extends Service {
 
     private Handler globalTickHandler = new Handler(Looper.getMainLooper());
     private Runnable globalTickRunnable;
+    private Runnable scheduledNotifyRunnable;
     private Vibrator vibrator;
     private NotificationManager notificationManager;
     private static final int BOSS_NOTIFICATION_ID = 100;
@@ -265,6 +266,7 @@ public class FloatingWindowService extends Service {
             case EventTypes.EDIT_ITEM:
                 refreshData();
                 updateRecyclerViewHeight();
+                scheduleNextNotification();
                 break;
         }
     }
@@ -292,6 +294,7 @@ public class FloatingWindowService extends Service {
         updateRecyclerViewHeight();
         updateShareButtonText();
         updateModeIndicator();
+        scheduleNextNotification();
     }
 
     private void updateFloatingWindowTexts() {
@@ -599,6 +602,7 @@ public class FloatingWindowService extends Service {
             }
             sp.edit().putString(FAV_KEY, newFavs.toString()).apply();
             if (favoriteIcon != null) favoriteIcon.setText(removed ? "☆" : "★");
+            EventBus.getDefault().post(new DataChangedEvent("fav"));
         } catch (Exception ignored) {}
     }
 
@@ -1270,24 +1274,83 @@ public class FloatingWindowService extends Service {
             public void run() {
                 if (isMinimized) {
                     updateTime();
+                    globalTickHandler.postDelayed(this, 1000);
+                } else {
+                    if (adapter != null) {
+                        adapter.onTick();
+                    }
+                    scheduleNextNotification();
+                    globalTickHandler.postDelayed(this, 1000);
                 }
-
-                doNotificationChecks();
-
-                if (!isMinimized && adapter != null) {
-                    adapter.onTick();
-                }
-
-                globalTickHandler.postDelayed(this, 1000);
             }
         };
         globalTickHandler.post(globalTickRunnable);
+        scheduleNextNotification();
     }
 
     private void stopGlobalTick() {
-        if (globalTickHandler != null && globalTickRunnable != null) {
-            globalTickHandler.removeCallbacks(globalTickRunnable);
-            globalTickRunnable = null;
+        if (globalTickHandler != null) {
+            if (globalTickRunnable != null) {
+                globalTickHandler.removeCallbacks(globalTickRunnable);
+                globalTickRunnable = null;
+            }
+            if (scheduledNotifyRunnable != null) {
+                globalTickHandler.removeCallbacks(scheduledNotifyRunnable);
+                scheduledNotifyRunnable = null;
+            }
+        }
+    }
+
+    private void scheduleNextNotification() {
+        if (globalTickHandler == null) return;
+        if (scheduledNotifyRunnable != null) {
+            globalTickHandler.removeCallbacks(scheduledNotifyRunnable);
+            scheduledNotifyRunnable = null;
+        }
+
+        long now = System.currentTimeMillis();
+        long nextNotifyTime = Long.MAX_VALUE;
+
+        List<RowData> allBosses = new ArrayList<>();
+        allBosses.addAll(dbHelper.getAllBosses());
+        String curRoomId = dataManager.getCurrentRoomId();
+        if (curRoomId != null) {
+            allBosses.addAll(dbHelper.getAllBossesByRoom(curRoomId));
+        }
+        List<String> otherRooms = dbHelper.getAllRoomIds();
+        for (String rId : otherRooms) {
+            if (!rId.equals(curRoomId)) {
+                allBosses.addAll(dbHelper.getAllBossesByRoom(rId));
+            }
+        }
+
+        java.util.Map<Long, RowData> deduped = new java.util.HashMap<>();
+        for (RowData d : allBosses) {
+            deduped.put(d.id, d);
+        }
+
+        for (RowData data : deduped.values()) {
+            if (!data.needNotify || data.isNotified || data.spawnTime <= 0) continue;
+            long elapsedSeconds = data.spawnTime - ((now - data.startTime) / 1000);
+            if (elapsedSeconds <= 0) continue;
+            long notifyAtTimestamp = data.startTime + (data.spawnTime - data.notifyTime) * 1000;
+            if (notifyAtTimestamp <= now) {
+                nextNotifyTime = now;
+                break;
+            }
+            if (notifyAtTimestamp < nextNotifyTime) {
+                nextNotifyTime = notifyAtTimestamp;
+            }
+        }
+
+        if (nextNotifyTime <= now) {
+            doNotificationChecks();
+        } else if (nextNotifyTime < Long.MAX_VALUE) {
+            long delay = nextNotifyTime - now;
+            scheduledNotifyRunnable = () -> {
+                doNotificationChecks();
+            };
+            globalTickHandler.postDelayed(scheduledNotifyRunnable, delay);
         }
     }
 
@@ -1355,6 +1418,7 @@ public class FloatingWindowService extends Service {
         }
 
         if (suppressNextNotify) suppressNextNotify = false;
+        scheduleNextNotification();
     }
 
     private void checkAndNotify(RowData data, long elapsedSeconds) {
@@ -1363,7 +1427,8 @@ public class FloatingWindowService extends Service {
             if (notifiedBossIds.contains(data.id)) return;
             notifiedBossIds.add(data.id);
             if (vibrator != null && vibrator.hasVibrator()) {
-                vibrator.vibrate(2000);
+                vibrator.cancel();
+                vibrator.vibrate(1500);
             }
             String title = getString(R.string.notification_title);
             String content = String.format(Locale.getDefault(),

@@ -284,6 +284,20 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.DELETE_ITEM, position));
     }
 
+    public void pause() {
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
+        }
+    }
+
+    public void resume() {
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
+        }
+        refreshData();
+        startTimeUpdate();
+    }
+
     @Override
     public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
         super.onDetachedFromRecyclerView(recyclerView);

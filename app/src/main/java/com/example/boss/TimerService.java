@@ -95,7 +95,8 @@ public class TimerService extends Service {
     public void sendBossNotification(String bossName, long remainingTime) {
         // 震动提醒
         if (vibrator != null && vibrator.hasVibrator()) {
-            long[] pattern = {0, 2000};
+            vibrator.cancel();
+            long[] pattern = {0, 1500};
             vibrator.vibrate(pattern, -1);
         }
 

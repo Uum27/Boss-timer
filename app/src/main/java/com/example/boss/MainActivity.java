@@ -416,6 +416,7 @@ public class MainActivity extends AppCompatActivity {
             getSharedPreferences("boss_fav_rooms", MODE_PRIVATE).edit().putString("fav_ids", newFavs.toString()).apply();
             headerFavIcon.setText(removed ? "☆" : "★");
             headerFavText.setText(removed ? getString(R.string.favorite) : getString(R.string.favorite));
+            EventBus.getDefault().post(new DataChangedEvent("fav"));
         } catch (Exception ignored) {}
     }
 
@@ -1817,6 +1818,22 @@ public class MainActivity extends AppCompatActivity {
         if (event.type == EventTypes.EDIT_ITEM || event.type == EventTypes.RESET_ITEM) {
         updateRoomStatusDisplay();
     }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (adapter != null) {
+            adapter.pause();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (adapter != null) {
+            adapter.resume();
+        }
     }
 
     @Override
