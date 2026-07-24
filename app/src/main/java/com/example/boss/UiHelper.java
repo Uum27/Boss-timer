@@ -76,6 +76,7 @@ public class UiHelper {
             case "rename": return "改名 rename 이름변경";
             case "role": return "权限 role 권한";
             case "restart": return "重启 restart 재시작";
+            case "reset": return "重置 reset 리셋";
             case "auto": return "自动 auto 자동";
             case "float_batch": return "悬浮窗 float 부동창";
             default: return action;
@@ -153,7 +154,13 @@ public class UiHelper {
                 } else if ("join".equals(a)) {
                     tx.append(l.optString("userName")).append(" (").append(l.optString("userId")).append(") 【").append(ctx.getString(R.string.log_join)).append("】");
                 } else if ("rename".equals(a)) {
-                    tx.append(l.optString("userName")).append("(").append(l.optString("userId")).append(")").append(ctx.getString(R.string.log_to)).append(l.optString("target")).append("(").append(l.optString("userId")).append(") 【").append(ctx.getString(R.string.log_rename)).append("】");
+                    String rnUser = l.optString("userName", "");
+                    if (!rnUser.isEmpty()) {
+                        tx.append(rnUser).append(" | ").append(l.optString("target")).append(" 【").append(ctx.getString(R.string.log_rename)).append("】");
+                    } else {
+                        tx.append(l.optString("target")).append("(").append(l.optString("userId","")).append(") 【").append(ctx.getString(R.string.log_rename)).append("】");
+                    }
+                    tx.append("\n  ").append(ctx.getString(R.string.log_rename_label)).append(": ").append(l.optString("target","")).append(" ").append(ctx.getString(R.string.log_to)).append(" ").append(l.optString("newName",""));
                 } else if ("role".equals(a)) {
                     tx.append(l.optString("userName")).append(" 【").append(ctx.getString(R.string.log_permission)).append("】");
                     tx.append("\n  ").append(l.optString("target")).append(" (").append(l.optString("targetUserId","")).append(")");
@@ -161,6 +168,16 @@ public class UiHelper {
                         JSONObject ch = chs.getJSONObject(0);
                         tx.append("\n  ").append(ctx.getString(R.string.log_permission)).append(": ").append(ch.optString("old","")).append(ctx.getString(R.string.log_to)).append(ch.optString("new",""));
                     }
+                } else if ("reset".equals(a)) {
+                    tx.append(l.optString("userName")).append(" | ").append(l.optString("target")).append(" 【").append(ctx.getString(R.string.log_reset)).append("】");
+                    long oldRt = l.optLong("oldEndTime", 0);
+                    long rt = l.optLong("endTime",0);
+                    if (rt > 0) {
+                        tx.append("\n  ").append(ctx.getString(R.string.log_end_time)).append(": ");
+                        if (oldRt > 0) tx.append(formatTime(oldRt)).append(" ").append(ctx.getString(R.string.log_to)).append(" ");
+                        tx.append(formatTime(rt));
+                    }
+                    long sp = l.optLong("spawn",0); if (sp>0) tx.append("\n  ").append(ctx.getString(R.string.log_reset_time)).append(": ").append(formatSeconds(sp));
                 } else if ("auto".equals(a)) {
                     tx.append(l.optString("target")).append(" 【").append(ctx.getString(R.string.log_auto_reset)).append("】");
                     tx.append("\n  ").append(ctx.getString(R.string.log_end_time)).append(": ").append(formatTime(l.optLong("refreshTime")));
@@ -193,6 +210,34 @@ public class UiHelper {
                         lb = ctx.getString(R.string.log_edit);
                     }
                     tx.append(l.optString("userName")).append(" | ").append(l.optString("target")).append(" 【").append(lb).append("】");
+                    String editType = l.optString("editTimeType", "");
+                    if (!editType.isEmpty()) {
+                        long enteredVal = 0;
+                        long newRefresh = 0;
+                        if (chs != null) {
+                            for (int c = 0; c < chs.length(); c++) {
+                                if ("startTime".equals(chs.optJSONObject(c).optString("field"))) {
+                                    JSONObject st = chs.getJSONObject(c);
+                                    enteredVal = st.optLong("enteredValue", 0);
+                                    newRefresh = st.optLong("newRefresh", 0);
+                                    break;
+                                }
+                            }
+                        }
+                        String editLabel = editType;
+                        switch (editType) {
+                            case "killTime": editLabel = ctx.getString(R.string.edit_time_type_kill); break;
+                            case "refreshTime": editLabel = ctx.getString(R.string.edit_time_type_refresh); break;
+                            case "remainingTime": editLabel = ctx.getString(R.string.edit_time_type_remaining); break;
+                        }
+                        tx.append("\n  ").append(editLabel).append(": ");
+                        if (enteredVal > 0) {
+                            if ("remainingTime".equals(editType)) tx.append(formatSeconds(enteredVal));
+                            else tx.append(formatTime(enteredVal));
+                        } else if (newRefresh > 0) {
+                            tx.append(formatTime(newRefresh));
+                        }
+                    }
                     if (chs != null) {
                         JSONObject dmCh = null, dcCh = null;
                         for (int c = 0; c < chs.length(); c++) {

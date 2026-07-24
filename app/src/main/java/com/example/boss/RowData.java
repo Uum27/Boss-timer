@@ -27,6 +27,8 @@ public class RowData {
     public int decreasingCount = 0;
     public int deathCount = 0;
     public long initialSpawnTime = 0;
+    public String editTimeType = null;
+    public long enteredValue = 0;
 
     public RowData() {
         this.isNotified = false;

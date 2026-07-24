@@ -243,6 +243,12 @@
     <string name="expansion_code_tip">확장 코드: 810026494 (제한 해제)</string>
 
     <string name="log_rename">이름변경</string>
+    <string name="log_rename_label">이름변경</string>
+    <string name="log_reset">리셋</string>
+    <string name="log_refresh_time">리셋 시간</string>
+    <string name="edit_time_type_kill">사망 시간</string>
+    <string name="edit_time_type_refresh">리셋 시간</string>
+    <string name="edit_time_type_remaining">남은 시간</string>
     <string name="log_permission">권한</string>
     <string name="log_remind">알림변경</string>
     <string name="log_restart">재시작</string>

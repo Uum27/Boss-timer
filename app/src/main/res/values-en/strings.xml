@@ -243,6 +243,12 @@
     <string name="expansion_code_tip">Exp. Code: 810026494 (unlock limits)</string>
 
     <string name="log_rename">Rename</string>
+    <string name="log_rename_label">Rename</string>
+    <string name="log_reset">Reset</string>
+    <string name="log_refresh_time">Refresh Time</string>
+    <string name="edit_time_type_kill">Kill Time</string>
+    <string name="edit_time_type_refresh">Refresh Time</string>
+    <string name="edit_time_type_remaining">Remaining Time</string>
     <string name="log_permission">Permission</string>
     <string name="log_remind">Remind</string>
     <string name="log_restart">Restart</string>

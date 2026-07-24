@@ -384,9 +384,11 @@ async function updateBoss(params) {
   const spawn = old.spawn || 0;
   const changes = [];
   if (boss.startTime !== undefined && boss.startTime !== old.startTime) {
-    changes.push({ field: 'startTime', old: old.startTime || 0, new: boss.startTime,
+    const stChange = { field: 'startTime', old: old.startTime || 0, new: boss.startTime,
       oldRefresh: (old.startTime || 0) + spawn * 1000, newRefresh: boss.startTime + spawn * 1000,
-      spawn: spawn });
+      spawn: spawn };
+    if (boss.enteredValue !== undefined) stChange.enteredValue = boss.enteredValue;
+    changes.push(stChange);
   }
   if (boss.name !== undefined && boss.name !== old.name) changes.push({ field: 'name', old: old.name || '', new: boss.name });
   if (boss.notifyTime !== undefined && boss.notifyTime !== old.notifyTime) changes.push({ field: 'notifyTime', old: old.notifyTime || 0, new: boss.notifyTime });
@@ -396,10 +398,11 @@ async function updateBoss(params) {
   if (boss.decreasingMode !== undefined && boss.decreasingMode !== old.decreasingMode) changes.push({ field: 'decreasingMode', old: !!old.decreasingMode, new: !!boss.decreasingMode });
   if (boss.decreasingSeconds !== undefined && boss.decreasingSeconds !== old.decreasingSeconds) changes.push({ field: 'decreasingSeconds', old: old.decreasingSeconds || 0, new: boss.decreasingSeconds });
   if (boss.decreasingCount !== undefined && boss.decreasingCount !== old.decreasingCount) changes.push({ field: 'decreasingCount', old: old.decreasingCount || 0, new: boss.decreasingCount });
-  if (changes.length > 0) {
+  if (changes.length > 0 && (!boss.action || boss.action === 'edit')) {
     try { await db.collection('logs').add({
       roomId, userId, userName: member.name, action: 'edit', target: bossName || docId,
       changes: changes, time: Date.now(),
+      editTimeType: boss.editTimeType || '',
     }); } catch(e) {}
   }
 
@@ -610,6 +613,11 @@ async function addLog(params) {
   if (refreshTime !== undefined) logData.refreshTime = refreshTime;
   if (changes !== undefined) logData.changes = changes;
   if (bosses !== undefined) logData.bosses = bosses;
+  // 透传额外字段
+  const known = ['roomId','userId','userName','action','target','time','spawn','refreshTime','changes','bosses'];
+  for (const key of Object.keys(params)) {
+    if (!known.includes(key) && params[key] !== undefined) logData[key] = params[key];
+  }
   await db.collection('logs').add(logData);
   return jsonResp({ success: true });
 }

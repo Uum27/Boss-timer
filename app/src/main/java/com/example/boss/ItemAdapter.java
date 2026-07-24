@@ -186,7 +186,6 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
                             } else {
                                 data.text3 = String.format(Locale.getDefault(), "%02d:%02d", (newElapsed % 3600) / 60, newElapsed % 60);
                             }
-                            dataManager.addAutoLog(data.id, data.startTime, data.spawnTime);
                             notifyItemChanged(i);
                         } else {
                             // 已过期且不自动重置，显示“已刷新”
@@ -219,6 +218,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     public void resetTime(int position) {
         if (position >= 0 && position < dataList.size()) {
             RowData data = dataList.get(position);
+            long oldEndTime = data.startTime + data.spawnTime * 1000;
             data.startTime = System.currentTimeMillis();
             if (data.decreasingMode && data.deathCount < data.decreasingCount && data.decreasingSeconds > 0) {
                 data.deathCount++;
@@ -231,8 +231,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
             data.isNotified = false;
             dataManager.setIsNotified(data.id, false);
             if (dataManager.isShowingSharedData() && data.docId != null) {
-                dataManager.resetBossShared(data.id, data.startTime);
-                dataManager.editBossShared(data);
+                dataManager.resetBossAndLog(data, oldEndTime);
             } else {
                 dataManager.resetBossStartTime(data.id, data.startTime);
             }

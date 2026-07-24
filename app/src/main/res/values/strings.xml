@@ -250,6 +250,12 @@
     <string name="expansion_code_tip">扩容码：810026494（解除房间和Boss数量限制）</string>
 
     <string name="log_rename">改名</string>
+    <string name="log_rename_label">改名</string>
+    <string name="log_reset">重置</string>
+    <string name="log_refresh_time">刷新时间</string>
+    <string name="edit_time_type_kill">死亡时间</string>
+    <string name="edit_time_type_refresh">刷新时间</string>
+    <string name="edit_time_type_remaining">剩余时间</string>
     <string name="log_permission">权限</string>
     <string name="log_remind">提醒</string>
     <string name="log_restart">重启</string>

@@ -97,14 +97,14 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
                 } else {
                     data.text3 = String.format(Locale.getDefault(), "%02d:%02d", (newElapsed % 3600) / 60, newElapsed % 60);
                 }
-                dataManager.addAutoLog(data.id, data.startTime, data.spawnTime);
                 notifyItemChanged(i);
             } else {
                 String refreshed = context.getString(R.string.refreshed);
                 if (!refreshed.equals(data.text2)) {
                     data.text2 = refreshed;
                     data.text3 = "00:00";
-                    notifyItemChanged(i);
+                dataManager.addAutoLog(data.id, data.startTime, data.spawnTime);
+                notifyItemChanged(i);
                 }
             }
         }
@@ -294,6 +294,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
     public void resetTime(int position) {
         if (position >= 0 && position < dataList.size()) {
             RowData data = dataList.get(position);
+            long oldEndTime = data.startTime + data.spawnTime * 1000;
             data.startTime = System.currentTimeMillis();
             if (data.decreasingMode && data.deathCount < data.decreasingCount && data.decreasingSeconds > 0) {
                 data.deathCount++;
@@ -306,8 +307,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
             data.isNotified = false;
             dataManager.setIsNotified(data.id, false);
             if (dataManager.isShowingSharedData() && data.docId != null) {
-                dataManager.resetBossShared(data.id, data.startTime);
-                dataManager.editBossShared(data);
+                dataManager.resetBossAndLog(data, oldEndTime);
             } else {
                 dataManager.resetBossStartTime(data.id, data.startTime);
             }

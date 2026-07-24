@@ -1499,17 +1499,18 @@ public class FloatingWindowService extends Service {
                     int shown = 0;
                     for (int i = 0; i < logs.length() && shown < 2; i++) {
                         JSONObject l = logs.getJSONObject(i); String a = l.optString("action");
-                        if (!"delete".equals(a) && !"edit".equals(a)) continue;
+                        if (!"delete".equals(a) && !"edit".equals(a) && !"reset".equals(a)) continue;
                         JSONArray chs = l.optJSONArray("changes");
                         boolean hasTimeChange = false;
                         if (chs != null) for (int ct = 0; ct < chs.length(); ct++) {
                             String ff = chs.optJSONObject(ct).optString("field");
                             if ("startTime".equals(ff) || "spawn".equals(ff)) { hasTimeChange = true; break; }
                         }
-                        if (!"delete".equals(a) && !hasTimeChange) continue;
+                        if (!"delete".equals(a) && !"reset".equals(a) && !hasTimeChange) continue;
 
                         String lb;
                         if ("delete".equals(a)) lb = c.getString(R.string.log_delete);
+                        else if ("reset".equals(a)) lb = c.getString(R.string.log_reset);
                         else lb = c.getString(R.string.log_edit);
                         StringBuilder tx = new StringBuilder();
                         tx.append(sdf.format(new java.util.Date(l.optLong("time")))).append(" | ").append(l.optString("userName")).append(" | ").append(l.optString("target")).append("【").append(lb).append("】");
@@ -1526,6 +1527,16 @@ public class FloatingWindowService extends Service {
                         if ("delete".equals(a)) {
                             long rt = l.optLong("refreshTime", 0); if (rt > 0) tx.append("\n").append(c.getString(R.string.log_end_time)).append(":").append(formatFloatTime(rt));
                             long sp = l.optLong("spawn", 0); if (sp > 0) tx.append("\n").append(c.getString(R.string.log_reset_time)).append(":").append(formatSeconds(sp));
+                        } else if ("reset".equals(a)) {
+                            long oldRt = l.optLong("oldEndTime", 0);
+                            long rt = l.optLong("endTime", 0);
+                            if (rt > 0) {
+                                tx.append("\n").append(c.getString(R.string.log_end_time)).append(":");
+                                if (oldRt > 0) tx.append(formatFloatTime(oldRt)).append("→");
+                                tx.append(formatFloatTime(rt));
+                            }
+                            long sp = l.optLong("spawn", 0);
+                            if (sp > 0) tx.append("\n").append(c.getString(R.string.log_reset_time)).append(":").append(formatSeconds(sp));
                         }
                         TextView tv = new TextView(c);
                         tv.setText(tx.toString()); tv.setTextSize(12); tv.setTextColor(0xFFFFFFFF); tv.setPadding(8,6,8,6);

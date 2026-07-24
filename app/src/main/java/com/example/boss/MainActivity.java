@@ -29,6 +29,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -1367,6 +1368,8 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle(R.string.dialog_title_edit_name)
                 .setView(dialogView)
                 .setPositiveButton(R.string.dialog_button_ok, (di, which) -> {
+                    String oldName = data.text1;
+                    long oldSpawn = data.spawnTime;
                     // 更新名称
                     String newName = nameInput.getText().toString().trim();
                     if (!newName.isEmpty()) {
@@ -1377,10 +1380,11 @@ public class MainActivity extends AppCompatActivity {
                     long h = parseLongOrDefault(hourInput.getText().toString().trim(), 0);
                     long m = parseLongOrDefault(minuteInput.getText().toString().trim(), 0);
                     long s = parseLongOrDefault(secondInput.getText().toString().trim(), 0);
-                    long newSpawn = h * 3600 + m * 60 + s;  // ★ 确保 newSpawn 定义在此
+                    long newSpawn = h * 3600 + m * 60 + s;
 
+                    boolean spawnChanged = newSpawn > 0 && newSpawn != oldSpawn;
                     // 若输入了有效周期，则更新 spawnTime，保留 startTime 不变
-                    if (newSpawn > 0) {
+                    if (spawnChanged) {
                         data.spawnTime = newSpawn;
                         data.isNotified = false; // 重置通知状态
                     }
@@ -1398,7 +1402,11 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     if (dataManager.isShowingSharedData()) {
-                        dataManager.editBossShared(data);
+                        if (!spawnChanged && !oldName.equals(data.text1)) {
+                            dataManager.renameBossAndSync(data, oldName, data.text1);
+                        } else {
+                            dataManager.editBossShared(data);
+                        }
                     } else {
                         dataManager.editBoss(data);
                     }
@@ -1522,12 +1530,14 @@ public class MainActivity extends AppCompatActivity {
 
                     // 优先死亡时间
                     if (hasKilled) {
+                        data.editTimeType = "killTime";
                         Calendar killedCalendar = Calendar.getInstance();
                         if (!killedDayText.isEmpty()) killedCalendar.add(Calendar.DAY_OF_MONTH, -Integer.parseInt(killedDayText));
                         if (!killedHourText.isEmpty()) killedCalendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(killedHourText));
                         if (!killedMinuteText.isEmpty()) killedCalendar.set(Calendar.MINUTE, Integer.parseInt(killedMinuteText));
                         if (!killedSecondText.isEmpty()) killedCalendar.set(Calendar.SECOND, Integer.parseInt(killedSecondText));
-                        data.startTime = killedCalendar.getTimeInMillis();
+                        data.enteredValue = killedCalendar.getTimeInMillis();
+                        data.startTime = data.enteredValue;
                         if (data.decreasingMode && data.deathCount < data.decreasingCount && data.decreasingSeconds > 0) {
                             data.deathCount++;
                             if (data.initialSpawnTime == 0) data.initialSpawnTime = data.spawnTime;
@@ -1535,6 +1545,7 @@ public class MainActivity extends AppCompatActivity {
                             if (data.spawnTime < 0) data.spawnTime = 0;
                         }
                     } else if (hasSpawn) {
+                        data.editTimeType = "refreshTime";
                         Calendar spawnCalendar = Calendar.getInstance();
                         if (!needDayText.isEmpty()) {
                             spawnCalendar.add(Calendar.DAY_OF_MONTH, Integer.parseInt(needDayText));
@@ -1542,7 +1553,8 @@ public class MainActivity extends AppCompatActivity {
                         if (!spawnHourText.isEmpty()) spawnCalendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(spawnHourText));
                         if (!spawnMinuteText.isEmpty()) spawnCalendar.set(Calendar.MINUTE, Integer.parseInt(spawnMinuteText));
                         if (!spawnSecondText.isEmpty()) spawnCalendar.set(Calendar.SECOND, Integer.parseInt(spawnSecondText));
-                        data.startTime = (spawnCalendar.getTimeInMillis() / 1000 - data.spawnTime) * 1000;
+                        data.enteredValue = spawnCalendar.getTimeInMillis();
+                        data.startTime = (data.enteredValue / 1000 - data.spawnTime) * 1000;
                         if (data.decreasingMode && data.deathCount < data.decreasingCount && data.decreasingSeconds > 0) {
                             data.deathCount++;
                             if (data.initialSpawnTime == 0) data.initialSpawnTime = data.spawnTime;
@@ -1634,6 +1646,8 @@ public class MainActivity extends AppCompatActivity {
                     if (!secondText.isEmpty()) newRemaining += Long.parseLong(secondText);
 
                     if (newRemaining > 0) {
+                        data.editTimeType = "remainingTime";
+                        data.enteredValue = newRemaining;
                         data.startTime = System.currentTimeMillis() + newRemaining * 1000 - data.spawnTime * 1000;
                         data.isNotified = false;
                         if (newRemaining >= 3600) {
@@ -1720,8 +1734,32 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_donate, null);
         Button closeButton = dialogView.findViewById(R.id.close_button);
+        ImageView qr1 = dialogView.findViewById(R.id.qr_code_image);
+        ImageView qr2 = dialogView.findViewById(R.id.qr_code_image2);
         AlertDialog dialog = builder.setView(dialogView).create();
         closeButton.setOnClickListener(v -> dialog.dismiss());
+
+        View.OnClickListener qrClickListener = v -> {
+            dialog.dismiss();
+            ImageView zoomView = new ImageView(this);
+            zoomView.setImageDrawable(((ImageView) v).getDrawable());
+            zoomView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            zoomView.setAdjustViewBounds(true);
+            AlertDialog zoomDialog = new AlertDialog.Builder(this)
+                    .setView(zoomView)
+                    .setCancelable(true)
+                    .create();
+            zoomDialog.setOnCancelListener(d -> zoomDialog.dismiss());
+            zoomDialog.show();
+            Window w = zoomDialog.getWindow();
+            if (w != null) {
+                w.setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.90),
+                        (int) (getResources().getDisplayMetrics().heightPixels * 0.6));
+            }
+        };
+        qr1.setOnClickListener(qrClickListener);
+        qr2.setOnClickListener(qrClickListener);
+
         dialog.setCanceledOnTouchOutside(true);
         dialog.show();
         Window window = dialog.getWindow();

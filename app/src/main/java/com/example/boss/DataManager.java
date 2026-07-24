@@ -134,6 +134,7 @@ public class DataManager {
 
     public void setUserName(String userName) {
         if (userName == null || userName.equals(myUserName)) return;
+        String oldName = myUserName;
         this.myUserName = userName;
         prefs.edit().putString(KEY_USER_NAME, userName).apply();
         if (isSharedMode && currentRoomId != null && myUserId != null) {
@@ -141,7 +142,18 @@ public class DataManager {
                 try { cloudHelper.updateMyName(currentRoomId, myUserId, userName); }
                 catch (Exception ignored) {}
             });
+            addUserRenameLog(oldName, userName);
         }
+    }
+
+    private void addUserRenameLog(String oldName, String newName) {
+        if (currentRoomId == null || myUserId == null) return;
+        executor.execute(() -> {
+            try {
+                cloudHelper.addLog(currentRoomId, myUserId, "", "rename", oldName,
+                        "\"newName\":\"" + escapeJson(newName) + "\",\"userId\":\"" + myUserId + "\"");
+            } catch (Exception e) { Log.e(TAG, "addUserRenameLog failed", e); }
+        });
     }
 
     public void registerUser(String name, Callback<String> callback) {
@@ -372,7 +384,23 @@ public class DataManager {
         if (data.roomId == null) data.roomId = currentRoomId;
         dbHelper.editBoss(data);
         refreshCache();
-        pushUpdateBoss(data);
+        pushUpdateBoss(data, null);
+    }
+
+    public void renameBossAndSync(RowData data, String oldName, String newName) {
+        if (data.roomId == null) data.roomId = currentRoomId;
+        dbHelper.editBoss(data);
+        refreshCache();
+        pushUpdateBoss(data, "rename");
+        addRenameLog(data.id, oldName, newName);
+    }
+
+    public void resetBossAndLog(RowData data, long oldEndTime) {
+        if (data.roomId == null) data.roomId = currentRoomId;
+        dbHelper.editBoss(data);
+        refreshCache();
+        pushUpdateBoss(data, "reset");
+        addResetLog(data.id, data.startTime, data.spawnTime, oldEndTime);
     }
 
     public void deleteBossShared(long id) {
@@ -428,6 +456,32 @@ public class DataManager {
         });
     }
 
+    public void addResetLog(long id, long startTime, long spawnTime, long oldEndTime) {
+        RowData data = findCachedById(id);
+        if (data == null || data.roomId == null) return;
+        long endTime = startTime + spawnTime * 1000;
+        final String bossName = data.text1;
+        final String roomId = data.roomId;
+        executor.execute(() -> {
+            try {
+                cloudHelper.addLog(roomId, myUserId, getUserName(), "reset", bossName,
+                        "\"endTime\":" + endTime + ",\"oldEndTime\":" + oldEndTime + ",\"spawn\":" + spawnTime);
+            } catch (Exception e) { Log.e(TAG, "addResetLog failed", e); }
+        });
+    }
+
+    public void addRenameLog(long id, String oldName, String newName) {
+        RowData data = findCachedById(id);
+        if (data == null || data.roomId == null) return;
+        final String roomId = data.roomId;
+        executor.execute(() -> {
+            try {
+                cloudHelper.addLog(roomId, myUserId, getUserName(), "rename", oldName,
+                        "\"newName\":\"" + escapeJson(newName) + "\"");
+            } catch (Exception e) { Log.e(TAG, "addRenameLog failed", e); }
+        });
+    }
+
     private void pushAddBoss(RowData data) {
         long savedStartTime = data.startTime;
         executor.execute(() -> {
@@ -449,12 +503,13 @@ public class DataManager {
         });
     }
 
-    private void pushUpdateBoss(RowData data) {
+    private void pushUpdateBoss(RowData data, String action) {
         if (data.docId == null) return;
         executor.execute(() -> {
             try {
-                String json = rowDataToJson(data);
-                String result = cloudHelper.updateBoss(currentRoomId, myUserId, data.docId, json);
+                JSONObject j = new JSONObject(rowDataToJson(data));
+                if (action != null) j.put("action", action);
+                String result = cloudHelper.updateBoss(currentRoomId, myUserId, data.docId, j.toString());
                 JSONObject r = new JSONObject(result);
                 currentRoomVersion = r.optInt("version", currentRoomVersion);
                 dbHelper.saveRoomInfo(currentRoomId, currentRoomVersion);
@@ -720,6 +775,8 @@ public class DataManager {
             j.put("decreasingCount", data.decreasingCount);
             j.put("deathCount", data.deathCount);
             j.put("initialSpawnTime", data.initialSpawnTime);
+            if (data.editTimeType != null) j.put("editTimeType", data.editTimeType);
+            if (data.enteredValue != 0) j.put("enteredValue", data.enteredValue);
             return j.toString();
         } catch (Exception e) { return "{}"; }
     }
@@ -766,6 +823,11 @@ public class DataManager {
     }
 
     // ---- favorites (stored in SharedPreferences) ----
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
 
     public String getFavoritesJson() {
         return context.getSharedPreferences("boss_fav_rooms", Context.MODE_PRIVATE).getString("fav_ids", "[]");
