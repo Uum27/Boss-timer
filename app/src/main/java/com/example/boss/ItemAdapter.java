@@ -339,7 +339,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         // 计算剩余时间用于颜色
         long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
         if (elapsedSeconds < data.notifyTime) {
-            holder.text3.setTextColor(0xFFC0392B);
+            holder.text3.setTextColor(0xFFE6393C);  //提醒颜色
         } else {
             holder.text3.setTextColor(context.getResources().getColor(android.R.color.black));
         }
@@ -417,7 +417,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
                 holder.text3.setText(data.text3);
                 long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
                 if (elapsedSeconds >= 0 && elapsedSeconds < data.notifyTime) {
-                    holder.text3.setTextColor(0xFFC0392B);
+                    holder.text3.setTextColor(0xFFE6393C);  //提醒颜色
                 } else {
                     holder.text3.setTextColor(context.getResources().getColor(android.R.color.black));
                 }

@@ -170,7 +170,7 @@ async function joinRoom(params) {
       target: userName, time: Date.now(),
     }); } catch(e) {}
   } else if (userName && userName !== member.name) {
-    await db.collection(MEMBERS).where({ roomId, userId }).update({ name: userName });
+    await db.collection(MEMBERS).doc(member._id).update({ name: userName });
     member = await getMember(roomId, userId);
   }
 

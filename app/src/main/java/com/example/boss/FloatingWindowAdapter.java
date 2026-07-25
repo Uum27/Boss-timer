@@ -31,6 +31,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
     private boolean resetLocked = false;
     private final android.os.Handler resetLockHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private Runnable resetLockRunnable;
+    private final java.util.Set<Long> forcedResetIds = new java.util.HashSet<>();
 
     public FloatingWindowAdapter(List<RowData> dataList, Context context) {
         this.context = context;
@@ -103,7 +104,6 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
                 if (!refreshed.equals(data.text2)) {
                     data.text2 = refreshed;
                     data.text3 = "00:00";
-                dataManager.addAutoLog(data.id, data.startTime, data.spawnTime);
                 notifyItemChanged(i);
                 }
             }
@@ -147,6 +147,16 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
         holder.text2.setSelected(true);
         holder.text3.setSelected(true);
 
+        holder.text1.setOnClickListener(v -> {
+            if (dataManager.isShowingSharedData()) return;
+            if (forcedResetIds.contains(data.id)) {
+                forcedResetIds.remove(data.id);
+            } else {
+                forcedResetIds.add(data.id);
+            }
+            notifyItemChanged(position);
+        });
+
         holder.btnReset.setOnClickListener(v -> {
             if (resetLocked) return;
             if (buttonClickListener != null) {
@@ -165,7 +175,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
         long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
 
         boolean canShow;
-        if (data.autoReset && data.spawnTime > 300) {
+        if (data.autoReset && data.spawnTime > 6600) {
             canShow = false;
         } else if (elapsedSeconds <= 0) {
             canShow = !resetLocked;
@@ -185,6 +195,9 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
                 canShow = false;
             }
         }
+        if (!dataManager.isShowingSharedData() && forcedResetIds.contains(data.id)) {
+            canShow = !resetLocked;
+        }
         if (dataManager.isShowingSharedData()) {
             holder.btnReset.setVisibility(canShow && dataManager.canReset() ? View.VISIBLE : View.INVISIBLE);
         } else {
@@ -192,7 +205,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
         }
 
         if (elapsedSeconds < data.notifyTime) {
-            holder.text3.setTextColor(0xFFC0392B);
+            holder.text3.setTextColor(0xFFE6393C);  //提醒颜色
         } else {
             holder.text3.setTextColor(context.getResources().getColor(android.R.color.white));
         }
@@ -227,7 +240,7 @@ public class FloatingWindowAdapter extends RecyclerView.Adapter<FloatingWindowAd
                 holder.text3.setText(data.text3);
                 long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
                 if (elapsedSeconds >= 0 && elapsedSeconds < data.notifyTime) {
-                    holder.text3.setTextColor(0xFFC0392B);
+                    holder.text3.setTextColor(0xFFE6393C);   //提醒颜色
                 } else {
                     holder.text3.setTextColor(context.getResources().getColor(android.R.color.white));
                 }

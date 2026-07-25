@@ -419,12 +419,14 @@ public class DataManager {
     public void resetBossShared(long id, long startTime) {
         RowData data = findCachedById(id);
         if (data != null && data.startTime == startTime) return;
+        long snapshotSpawn = data != null ? data.spawnTime : 0;
         dbHelper.resetBossStartTime(id, startTime);
         refreshCache();
         data = findCachedById(id);
         if (data != null) {
             data.startTime = startTime;
             data.isNotified = false;
+            pushUpdateBoss(data, "autoReset");
         }
     }
 
@@ -453,6 +455,25 @@ public class DataManager {
                 cloudHelper.addLog(roomId, myUserId, "", "auto", bossName,
                         "\"spawn\":" + spawnTime + ",\"refreshTime\":" + endTime);
             } catch (Exception e) { Log.e(TAG, "addAutoLog failed", e); }
+        });
+    }
+
+    public void addEditTimeLog(RowData data, String editType, long oldStartTime, long oldSpawnTime) {
+        if (data.roomId == null) return;
+        long newStartTime = data.startTime;
+        long newSpawnTime = data.spawnTime;
+        final String bossName = data.text1;
+        final String roomId = data.roomId;
+        executor.execute(() -> {
+            try {
+                StringBuilder extra = new StringBuilder();
+                extra.append("\"editType\":\"").append(editType).append("\"");
+                extra.append(",\"startTime\":").append(newStartTime);
+                extra.append(",\"oldStartTime\":").append(oldStartTime);
+                extra.append(",\"spawn\":").append(newSpawnTime);
+                extra.append(",\"oldSpawn\":").append(oldSpawnTime);
+                cloudHelper.addLog(roomId, myUserId, getUserName(), "editTime", bossName, extra.toString());
+            } catch (Exception e) { Log.e(TAG, "addEditTimeLog failed", e); }
         });
     }
 
@@ -615,6 +636,16 @@ public class DataManager {
     public void forceSync() {
         if (!isSharedMode || currentRoomId == null || myUserId == null) return;
         executor.execute(this::checkAndSyncVersion);
+    }
+
+    private long lastThrottledSyncTime = 0;
+    private static final long THROTTLED_SYNC_INTERVAL = 30000;
+
+    public void throttledSync() {
+        long now = System.currentTimeMillis();
+        if (now - lastThrottledSyncTime < THROTTLED_SYNC_INTERVAL) return;
+        lastThrottledSyncTime = now;
+        forceSync();
     }
 
     public void fetchRoomPassword(Callback<String> callback) {

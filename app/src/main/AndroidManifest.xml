@@ -22,6 +22,7 @@
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.DEVICE_POWER"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -62,6 +63,10 @@
             android:exported="false"
             android:foregroundServiceType="dataSync"
             android:stopWithTask="false"/>
+
+        <receiver
+            android:name=".AlarmReceiver"
+            android:exported="false" />
 
     </application>
 

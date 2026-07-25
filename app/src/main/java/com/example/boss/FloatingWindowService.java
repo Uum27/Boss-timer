@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
@@ -88,9 +89,16 @@ public class FloatingWindowService extends Service {
     private boolean isBatteryReceiverRegistered = false;
     private static FloatingWindowService instance;
 
+    public static FloatingWindowService getInstance() {
+        return instance;
+    }
+
     private Handler globalTickHandler = new Handler(Looper.getMainLooper());
     private Runnable globalTickRunnable;
     private Runnable scheduledNotifyRunnable;
+    private AlarmManager alarmManager;
+    private PendingIntent alarmPendingIntent;
+    private static final long ALARM_MIN_DELAY = 30000;
     private Vibrator vibrator;
     private NotificationManager notificationManager;
     private static final int BOSS_NOTIFICATION_ID = 100;
@@ -775,9 +783,20 @@ public class FloatingWindowService extends Service {
                     if (rooms != null) {
                         for (int i = 0; i < rooms.length(); i++) {
                             JSONObject r = rooms.getJSONObject(i);
-                            myRoomIds.add(r.optString("roomId"));
-                            addRoomRow(panel, r.optString("roomName"), r.optString("roomId"),
-                                    r.optBoolean("hasPassword", false), "◆");
+                            String rid = r.optString("roomId");
+                            myRoomIds.add(rid);
+                            boolean isOwner = "owner".equals(r.optString("role", "member"))
+                                    || "super_admin".equals(r.optString("role", "member"));
+                            String icon;
+                            if (isOwner) {
+                                icon = "◆";
+                            } else if (isRoomFavorite(rid)) {
+                                icon = "★";
+                            } else {
+                                icon = "";
+                            }
+                            addRoomRow(panel, r.optString("roomName"), rid,
+                                    r.optBoolean("hasPassword", false), icon);
                         }
                     }
                     for (int i = 0; i < favs.length(); i++) {
@@ -1276,10 +1295,14 @@ public class FloatingWindowService extends Service {
                     updateTime();
                     globalTickHandler.postDelayed(this, 1000);
                 } else {
-                    if (adapter != null) {
+                    boolean hasOverlay = (authPanel != null && authPanel.getVisibility() == View.VISIBLE)
+                            || (joinRoomPanel != null && joinRoomPanel.getVisibility() == View.VISIBLE);
+                    if (!hasOverlay && adapter != null) {
                         adapter.onTick();
                     }
-                    scheduleNextNotification();
+                    if (!hasOverlay) {
+                        scheduleNextNotification();
+                    }
                     globalTickHandler.postDelayed(this, 1000);
                 }
             }
@@ -1298,6 +1321,27 @@ public class FloatingWindowService extends Service {
                 globalTickHandler.removeCallbacks(scheduledNotifyRunnable);
                 scheduledNotifyRunnable = null;
             }
+        }
+        cancelAlarm();
+    }
+
+    private void setAlarm(long triggerTimeMs) {
+        if (alarmManager == null) {
+            alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        }
+        if (alarmManager == null) return;
+        cancelAlarm();
+        alarmPendingIntent = AlarmReceiver.createPendingIntent(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!alarmManager.canScheduleExactAlarms()) return;
+        }
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTimeMs, alarmPendingIntent);
+    }
+
+    private void cancelAlarm() {
+        if (alarmManager != null && alarmPendingIntent != null) {
+            alarmManager.cancel(alarmPendingIntent);
+            alarmPendingIntent = null;
         }
     }
 
@@ -1319,7 +1363,7 @@ public class FloatingWindowService extends Service {
         }
         List<String> otherRooms = dbHelper.getAllRoomIds();
         for (String rId : otherRooms) {
-            if (!rId.equals(curRoomId)) {
+            if (!rId.equals(curRoomId) && isRoomFavorite(rId)) {
                 allBosses.addAll(dbHelper.getAllBossesByRoom(rId));
             }
         }
@@ -1327,6 +1371,35 @@ public class FloatingWindowService extends Service {
         java.util.Map<Long, RowData> deduped = new java.util.HashMap<>();
         for (RowData d : allBosses) {
             deduped.put(d.id, d);
+        }
+
+        for (RowData data : deduped.values()) {
+            if (!data.autoReset || data.spawnTime <= 0) continue;
+            long elapsedSeconds = data.spawnTime - ((now - data.startTime) / 1000);
+            if (elapsedSeconds <= 0) {
+                long cycle = data.spawnTime * 1000L;
+                long cycles = (now - data.startTime) / cycle;
+                long newStartTime = data.startTime + cycles * cycle;
+                while (newStartTime + cycle <= now) {
+                    newStartTime += cycle;
+                }
+                if (data.docId != null) {
+                    dataManager.resetBossShared(data.id, newStartTime);
+                } else {
+                    dataManager.resetBossStartTime(data.id, newStartTime);
+                }
+                data.startTime = newStartTime;
+                data.isNotified = false;
+            }
+        }
+
+        for (RowData data : deduped.values()) {
+            if (!data.autoReset || data.spawnTime <= 0) continue;
+            long expireTimestamp = data.startTime + data.spawnTime * 1000L;
+            if (expireTimestamp <= now) continue;
+            if (expireTimestamp < nextNotifyTime) {
+                nextNotifyTime = expireTimestamp;
+            }
         }
 
         for (RowData data : deduped.values()) {
@@ -1351,10 +1424,21 @@ public class FloatingWindowService extends Service {
                 doNotificationChecks();
             };
             globalTickHandler.postDelayed(scheduledNotifyRunnable, delay);
+            if (delay > ALARM_MIN_DELAY) {
+                setAlarm(nextNotifyTime - 5000);
+            } else {
+                cancelAlarm();
+            }
+        } else if (!deduped.isEmpty()) {
+            scheduledNotifyRunnable = () -> {
+                doNotificationChecks();
+            };
+            globalTickHandler.postDelayed(scheduledNotifyRunnable, 60000);
+            cancelAlarm();
         }
     }
 
-    private void doNotificationChecks() {
+    void doNotificationChecks() {
         notifiedBossIds.clear();
 
         List<RowData> currentData = dataManager.getAllBosses();
@@ -1399,6 +1483,7 @@ public class FloatingWindowService extends Service {
         java.util.Set<String> checkedRooms = new java.util.HashSet<>();
         for (String rId : allRoomIds) {
             if (rId == null || rId.equals(curRoomId)) continue;
+            if (!isRoomFavorite(rId)) continue;
             if (checkedRooms.contains(rId)) continue;
             checkedRooms.add(rId);
             List<RowData> roomBosses = dbHelper.getAllBossesByRoom(rId);

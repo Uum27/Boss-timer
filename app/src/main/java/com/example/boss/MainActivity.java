@@ -208,8 +208,8 @@ public class MainActivity extends AppCompatActivity {
 
         TextView headerEdit = findViewById(R.id.header_edit);
         headerEdit.setOnClickListener(v -> {
-            if (dataManager.isSharedMode() && dataManager.isShowingSharedData()
-                    && (dataManager.isOwner() || "super_admin".equals(dataManager.getMyRole()))) {
+            if (!dataManager.isShowingSharedData()
+                    || (dataManager.isOwner() || "super_admin".equals(dataManager.getMyRole()))) {
                 showFloatBatchDialog();
             }
         });
@@ -321,8 +321,8 @@ public class MainActivity extends AppCompatActivity {
         headerFavIcon.setOnClickListener(v -> toggleMainFav());
         headerFavText.setOnClickListener(v -> toggleMainFav());
         headerText.setOnClickListener(v -> {
-            if (dataManager.isSharedMode() && dataManager.isShowingSharedData()
-                    && (dataManager.isOwner() || "super_admin".equals(dataManager.getMyRole()))) {
+            if (!dataManager.isShowingSharedData()
+                    || (dataManager.isOwner() || "super_admin".equals(dataManager.getMyRole()))) {
                 showHeaderPopupMenu(v);
             }
         });
@@ -1230,7 +1230,9 @@ public class MainActivity extends AppCompatActivity {
                         if (!spawnHourText.isEmpty()) spawnCalendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(spawnHourText));
                         if (!spawnMinuteText.isEmpty()) spawnCalendar.set(Calendar.MINUTE, Integer.parseInt(spawnMinuteText));
                         if (!spawnSecondText.isEmpty()) spawnCalendar.set(Calendar.SECOND, Integer.parseInt(spawnSecondText));
-                        data.startTime = (spawnCalendar.getTimeInMillis() / 1000 - data.spawnTime) * 1000;
+                        data.editTimeType = "refreshTime";
+                        data.enteredValue = spawnCalendar.getTimeInMillis();
+                        data.startTime = (data.enteredValue / 1000 - data.spawnTime) * 1000;
                         if (data.decreasingMode && data.deathCount < data.decreasingCount && data.decreasingSeconds > 0) {
                             data.deathCount++;
                             if (data.initialSpawnTime == 0) data.initialSpawnTime = data.spawnTime;
@@ -1253,7 +1255,9 @@ public class MainActivity extends AppCompatActivity {
                         if (!killedHourText.isEmpty()) killedCalendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(killedHourText));
                         if (!killedMinuteText.isEmpty()) killedCalendar.set(Calendar.MINUTE, Integer.parseInt(killedMinuteText));
                         if (!killedSecondText.isEmpty()) killedCalendar.set(Calendar.SECOND, Integer.parseInt(killedSecondText));
-                        data.startTime = killedCalendar.getTimeInMillis();
+                        data.editTimeType = "killTime";
+                        data.enteredValue = killedCalendar.getTimeInMillis();
+                        data.startTime = data.enteredValue;
                         if (data.decreasingMode && data.deathCount < data.decreasingCount && data.decreasingSeconds > 0) {
                             data.deathCount++;
                             if (data.initialSpawnTime == 0) data.initialSpawnTime = data.spawnTime;
@@ -1271,6 +1275,8 @@ public class MainActivity extends AppCompatActivity {
                         }
                         data.isNotified = false;
                     } else if (spawn != 0) {
+                        data.editTimeType = "remainingTime";
+                        data.enteredValue = spawn;
                         data.startTime = System.currentTimeMillis() + spawn * 1000 - data.spawnTime * 1000;
                         data.setSpawnTime(this);
                         if (spawn >= 3600) {
@@ -1500,6 +1506,8 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle(R.string.dialog_title_edit_time)
                 .setView(dialogView)
                 .setPositiveButton(R.string.dialog_button_ok, (di, which) -> {
+                    long oldStartTime = data.startTime;
+                    long oldSpawnTime = data.spawnTime;
                     String killedDayText = killedDay.getText().toString().trim();
                     String killedHourText = killedHour.getText().toString().trim();
                     String killedMinuteText = killedMinute.getText().toString().trim();
@@ -1586,6 +1594,7 @@ public class MainActivity extends AppCompatActivity {
 
                     if (wasSharedMode) {
                         dataManager.editBossShared(data);
+                        dataManager.addEditTimeLog(data, data.editTimeType, oldStartTime, oldSpawnTime);
                     } else {
                         dataManager.editBoss(data);
                     }
@@ -1650,6 +1659,8 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle(R.string.dialog_title_edit_remaining)
                 .setView(dialogView)
                 .setPositiveButton(R.string.dialog_button_ok, (di, which) -> {
+                    long oldStartTime = data.startTime;
+                    long oldSpawnTime = data.spawnTime;
                     String hourText = hourInput.getText().toString().trim();
                     String minuteText = minuteInput.getText().toString().trim();
                     String secondText = secondInput.getText().toString().trim();
@@ -1674,6 +1685,7 @@ public class MainActivity extends AppCompatActivity {
                         data.setSpawnTime(this);
                     if (wasSharedMode) {
                         dataManager.editBossShared(data);
+                        dataManager.addEditTimeLog(data, data.editTimeType, oldStartTime, oldSpawnTime);
                     } else {
                         dataManager.editBoss(data);
                     }
@@ -1844,6 +1856,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        dataManager.throttledSync();
         if (adapter != null) {
             adapter.resume();
         }
@@ -1974,6 +1987,12 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.my_rooms_empty, Toast.LENGTH_SHORT).show();
             return;
         }
+        long now = System.currentTimeMillis();
+        java.util.Collections.sort(allBosses, (a, b) -> {
+            long ra = a.spawnTime - ((now - a.startTime) / 1000);
+            long rb = b.spawnTime - ((now - b.startTime) / 1000);
+            return Long.compare(ra, rb);
+        });
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
