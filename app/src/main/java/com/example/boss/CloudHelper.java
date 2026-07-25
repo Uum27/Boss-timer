@@ -62,7 +62,7 @@ public class CloudHelper {
                 }
                 br.close();
                 errorBody = sb.toString();
-            } catch (Exception ignored) {}
+            } catch (Exception e) { Log.e("CloudHelper", "read error", e); }
             Log.e("CloudHelper", "HTTP " + code + " " + path + " -> " + errorBody);
             throw new Exception("HTTP " + code + ": " + errorBody);
         }

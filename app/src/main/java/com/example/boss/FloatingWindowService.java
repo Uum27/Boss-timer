@@ -99,6 +99,7 @@ public class FloatingWindowService extends Service {
     private AlarmManager alarmManager;
     private PendingIntent alarmPendingIntent;
     private static final long ALARM_MIN_DELAY = 30000;
+    private List<RowData> notifyCache;
     private Vibrator vibrator;
     private NotificationManager notificationManager;
     private static final int BOSS_NOTIFICATION_ID = 100;
@@ -272,6 +273,7 @@ public class FloatingWindowService extends Service {
             case EventTypes.DELETE_ITEM:
             case EventTypes.NOTIFY_ITEM:
             case EventTypes.EDIT_ITEM:
+                invalidateNotifyCache();
                 refreshData();
                 updateRecyclerViewHeight();
                 scheduleNextNotification();
@@ -298,6 +300,7 @@ public class FloatingWindowService extends Service {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onDataChanged(DataChangedEvent event) {
+        invalidateNotifyCache();
         refreshData();
         updateRecyclerViewHeight();
         updateShareButtonText();
@@ -611,7 +614,7 @@ public class FloatingWindowService extends Service {
             sp.edit().putString(FAV_KEY, newFavs.toString()).apply();
             if (favoriteIcon != null) favoriteIcon.setText(removed ? "☆" : "★");
             EventBus.getDefault().post(new DataChangedEvent("fav"));
-        } catch (Exception ignored) {}
+        } catch (Exception e) { Log.e("FloatingWindow", "fav", e); }
     }
 
     private JSONArray getFavoriteRooms() {
@@ -755,7 +758,7 @@ public class FloatingWindowService extends Service {
                 }
             }
             getSharedPreferences(FAV_PREFS, MODE_PRIVATE).edit().putString(FAV_KEY, newFavs.toString()).apply();
-        } catch (Exception ignored) {}
+        } catch (Exception e) { Log.e("FloatingWindow", "fav", e); }
     }
 
     private void showMyRoomsInFloat() {
@@ -1345,6 +1348,10 @@ public class FloatingWindowService extends Service {
         }
     }
 
+    private void invalidateNotifyCache() {
+        notifyCache = null;
+    }
+
     private void scheduleNextNotification() {
         if (globalTickHandler == null) return;
         if (scheduledNotifyRunnable != null) {
@@ -1355,21 +1362,24 @@ public class FloatingWindowService extends Service {
         long now = System.currentTimeMillis();
         long nextNotifyTime = Long.MAX_VALUE;
 
-        List<RowData> allBosses = new ArrayList<>();
-        allBosses.addAll(dbHelper.getAllBosses());
-        String curRoomId = dataManager.getCurrentRoomId();
-        if (curRoomId != null) {
-            allBosses.addAll(dbHelper.getAllBossesByRoom(curRoomId));
-        }
-        List<String> otherRooms = dbHelper.getAllRoomIds();
-        for (String rId : otherRooms) {
-            if (!rId.equals(curRoomId) && isRoomFavorite(rId)) {
-                allBosses.addAll(dbHelper.getAllBossesByRoom(rId));
+        if (notifyCache == null) {
+            List<RowData> allBosses = new ArrayList<>();
+            allBosses.addAll(dbHelper.getAllBosses());
+            String curRoomId = dataManager.getCurrentRoomId();
+            if (curRoomId != null) {
+                allBosses.addAll(dbHelper.getAllBossesByRoom(curRoomId));
             }
+            List<String> otherRooms = dbHelper.getAllRoomIds();
+            for (String rId : otherRooms) {
+                if (!rId.equals(curRoomId) && isRoomFavorite(rId)) {
+                    allBosses.addAll(dbHelper.getAllBossesByRoom(rId));
+                }
+            }
+            notifyCache = allBosses;
         }
 
         java.util.Map<Long, RowData> deduped = new java.util.HashMap<>();
-        for (RowData d : allBosses) {
+        for (RowData d : notifyCache) {
             deduped.put(d.id, d);
         }
 
@@ -1429,11 +1439,7 @@ public class FloatingWindowService extends Service {
             } else {
                 cancelAlarm();
             }
-        } else if (!deduped.isEmpty()) {
-            scheduledNotifyRunnable = () -> {
-                doNotificationChecks();
-            };
-            globalTickHandler.postDelayed(scheduledNotifyRunnable, 60000);
+        } else {
             cancelAlarm();
         }
     }
@@ -1503,6 +1509,7 @@ public class FloatingWindowService extends Service {
         }
 
         if (suppressNextNotify) suppressNextNotify = false;
+        invalidateNotifyCache();
         scheduleNextNotification();
     }
 

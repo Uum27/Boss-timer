@@ -140,7 +140,7 @@ public class DataManager {
         if (isSharedMode && currentRoomId != null && myUserId != null) {
             executor.execute(() -> {
                 try { cloudHelper.updateMyName(currentRoomId, myUserId, userName); }
-                catch (Exception ignored) {}
+                catch (Exception e) { Log.e(TAG, "updateMyName failed", e); }
             });
             addUserRenameLog(oldName, userName);
         }

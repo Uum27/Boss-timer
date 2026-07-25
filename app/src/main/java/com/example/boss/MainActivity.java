@@ -1,6 +1,7 @@
 package com.example.boss;
 
 import android.Manifest;
+import android.app.AlarmManager;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -17,6 +18,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.method.ScrollingMovementMethod;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -124,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         checkAndRequestBatteryOptimization();
+        checkAndRequestExactAlarmPermission();
 
         searchInput = findViewById(R.id.search_input);
         mainLayout = findViewById(R.id.main);
@@ -419,7 +422,7 @@ public class MainActivity extends AppCompatActivity {
             headerFavIcon.setText(removed ? "☆" : "★");
             headerFavText.setText(removed ? getString(R.string.favorite) : getString(R.string.favorite));
             EventBus.getDefault().post(new DataChangedEvent("fav"));
-        } catch (Exception ignored) {}
+        } catch (Exception e) { Log.e("MainActivity", "toggleFav", e); }
     }
 
     private void showRoomError(String error) {
@@ -438,7 +441,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!rid.equals(f.optString("roomId"))) newFavs.put(f);
             }
             getSharedPreferences("boss_fav_rooms", MODE_PRIVATE).edit().putString("fav_ids", newFavs.toString()).apply();
-        } catch (Exception ignored) {}
+        } catch (Exception e) { Log.e("MainActivity", "toggleFav", e); }
     }
 
     private void addRoomListItem(LinearLayout parent, String name, String rid, String pwd, String icon, int idx, JSONArray rooms, String role) {
@@ -471,7 +474,7 @@ public class MainActivity extends AppCompatActivity {
                         roomObj.put("roomName", name);
                         roomObj.put("hasPassword", !pwd.isEmpty());
                         showManageRoomDialog(roomObj, role);
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) { Log.e("MainActivity", "toggleFav", e); }
                 });
             }
             mgrBtn.setTextSize(12);
@@ -786,7 +789,7 @@ public class MainActivity extends AppCompatActivity {
                         w.setLayout((int)(getResources().getDisplayMetrics().widthPixels * 0.9),
                                     (int)(getResources().getDisplayMetrics().heightPixels * 0.7));
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception e) { Log.e("MainActivity", "toggleFav", e); }
             }
             @Override public void onError(String error) {}
         });
@@ -1811,6 +1814,28 @@ public class MainActivity extends AppCompatActivity {
             adapter.updateData(dataManager.getAllBosses());
         };
         searchHandler.postDelayed(searchRunnable, 300);
+    }
+
+    private void checkAndRequestExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+                if (prefs.getBoolean("no_more_alarm_prompt", false)) return;
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.alarm_permission_title)
+                        .setMessage(R.string.alarm_permission_message)
+                        .setPositiveButton(R.string.go_to_settings, (dialog, which) -> {
+                            prefs.edit().putBoolean("no_more_alarm_prompt", true).apply();
+                            Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                            intent.setData(Uri.parse("package:" + getPackageName()));
+                            startActivity(intent);
+                        })
+                        .setNegativeButton(R.string.battery_opt_negative, null)
+                        .setCancelable(false)
+                        .show();
+            }
+        }
     }
 
     private void checkAndRequestBatteryOptimization() {

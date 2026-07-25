@@ -99,6 +99,8 @@
     <string name="battery_opt_message">为确保应用正常运行，建议将省电策略设置为无限制。\n如果不是无限制，则锁屏后无法正常震动提醒。\n\n设置路径：设置 -> 电池 -> 省电优化 -> 找到本应用 -> 选择无限制</string>
     <string name="battery_opt_positive">立即设置</string>
     <string name="battery_opt_negative">稍后设置</string>
+    <string name="alarm_permission_title">闹钟权限</string>
+    <string name="alarm_permission_message">为确保锁屏时Boss提醒不丢失，请允许"闹钟和提醒"权限</string>
 
     <!-- 默认占位文本 -->
     <string name="default_unknown">未知</string>

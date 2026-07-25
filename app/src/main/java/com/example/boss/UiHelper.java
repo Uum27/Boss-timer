@@ -2,6 +2,7 @@ package com.example.boss;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
@@ -60,7 +61,7 @@ public class UiHelper {
                     AlertDialog d = new AlertDialog.Builder(ctx).setTitle(R.string.logs_button).setView(root).create();
                     d.show(); Window w = d.getWindow();
                     if (w != null) w.setLayout((int)(ctx.getResources().getDisplayMetrics().widthPixels*0.9),(int)(ctx.getResources().getDisplayMetrics().heightPixels*0.8));
-                } catch(Exception ignored){}
+                } catch(Exception e){ Log.e("UiHelper", "showLogs", e); }
             }
             @Override public void onError(String e){}
         });
@@ -283,7 +284,7 @@ public class UiHelper {
 
                 TextView tv = new TextView(ctx); tv.setTextSize(13); tv.setPadding(12,8,12,8); tv.setText(tx.toString()); li.addView(tv);
                 View dv = new View(ctx); dv.setLayoutParams(new LinearLayout.LayoutParams(-1,1)); dv.setBackgroundColor(0x80D0D0D0); li.addView(dv);
-            } catch(Exception ignored){}
+            } catch(Exception e){ Log.e("UiHelper", "logDetail", e); }
         }
     }
 
@@ -301,7 +302,7 @@ public class UiHelper {
                         ub.setOnClickListener(v->dm.unbanMember(roomId,t,new DataManager.Callback<Boolean>(){@Override public void onResult(Boolean ok){showBlacklist(ctx,dm,roomId);}@Override public void onError(String e){}}));
                         r.addView(ub);l.addView(r);}
                     new AlertDialog.Builder(ctx).setTitle(R.string.blacklist).setView(l).show();
-                }catch(Exception ignored){}
+                }catch(Exception e){ Log.e("UiHelper", "blacklist", e); }
             }
             @Override public void onError(String e){}
         });

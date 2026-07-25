@@ -99,6 +99,8 @@
     <string name="battery_opt_message">Set battery optimization to unrestricted.\nSettings -> Battery -> Battery Optimization -> Find app -> Unrestricted</string>
     <string name="battery_opt_positive">Go to settings</string>
     <string name="battery_opt_negative">Later</string>
+    <string name="alarm_permission_title">Alarm Permission</string>
+    <string name="alarm_permission_message">Allow "Alarms &amp; reminders" permission to ensure boss notifications are not missed when screen is locked</string>
 
     <string name="default_unknown">Unknown</string>
     <string name="default_none">None</string>
