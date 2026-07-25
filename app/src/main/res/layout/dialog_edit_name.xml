@@ -100,6 +100,23 @@
             android:textColor="#FF6600" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tv_decrease_count_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#FF6600"
+        android:layout_marginTop="4dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tv_decrease_time_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#FF6600"
+        android:visibility="gone" />
+
     <Button
         android:id="@+id/btn_restart_decrease"
         android:layout_width="wrap_content"

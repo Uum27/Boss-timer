@@ -99,7 +99,7 @@ public class FloatingWindowService extends Service {
     private AlarmManager alarmManager;
     private PendingIntent alarmPendingIntent;
     private static final long ALARM_MIN_DELAY = 30000;
-    private List<RowData> notifyCache;
+    private boolean isCheckingNotifications = false;
     private Vibrator vibrator;
     private NotificationManager notificationManager;
     private static final int BOSS_NOTIFICATION_ID = 100;
@@ -273,7 +273,6 @@ public class FloatingWindowService extends Service {
             case EventTypes.DELETE_ITEM:
             case EventTypes.NOTIFY_ITEM:
             case EventTypes.EDIT_ITEM:
-                invalidateNotifyCache();
                 refreshData();
                 updateRecyclerViewHeight();
                 scheduleNextNotification();
@@ -300,7 +299,6 @@ public class FloatingWindowService extends Service {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onDataChanged(DataChangedEvent event) {
-        invalidateNotifyCache();
         refreshData();
         updateRecyclerViewHeight();
         updateShareButtonText();
@@ -1348,10 +1346,6 @@ public class FloatingWindowService extends Service {
         }
     }
 
-    private void invalidateNotifyCache() {
-        notifyCache = null;
-    }
-
     private void scheduleNextNotification() {
         if (globalTickHandler == null) return;
         if (scheduledNotifyRunnable != null) {
@@ -1362,24 +1356,21 @@ public class FloatingWindowService extends Service {
         long now = System.currentTimeMillis();
         long nextNotifyTime = Long.MAX_VALUE;
 
-        if (notifyCache == null) {
-            List<RowData> allBosses = new ArrayList<>();
-            allBosses.addAll(dbHelper.getAllBosses());
-            String curRoomId = dataManager.getCurrentRoomId();
-            if (curRoomId != null) {
-                allBosses.addAll(dbHelper.getAllBossesByRoom(curRoomId));
+        List<RowData> allBosses = new ArrayList<>();
+        allBosses.addAll(dbHelper.getAllBosses());
+        String curRoomId = dataManager.getCurrentRoomId();
+        if (curRoomId != null) {
+            allBosses.addAll(dbHelper.getAllBossesByRoom(curRoomId));
+        }
+        List<String> otherRooms = dbHelper.getAllRoomIds();
+        for (String rId : otherRooms) {
+            if (!rId.equals(curRoomId) && isRoomFavorite(rId)) {
+                allBosses.addAll(dbHelper.getAllBossesByRoom(rId));
             }
-            List<String> otherRooms = dbHelper.getAllRoomIds();
-            for (String rId : otherRooms) {
-                if (!rId.equals(curRoomId) && isRoomFavorite(rId)) {
-                    allBosses.addAll(dbHelper.getAllBossesByRoom(rId));
-                }
-            }
-            notifyCache = allBosses;
         }
 
         java.util.Map<Long, RowData> deduped = new java.util.HashMap<>();
-        for (RowData d : notifyCache) {
+        for (RowData d : allBosses) {
             deduped.put(d.id, d);
         }
 
@@ -1418,8 +1409,7 @@ public class FloatingWindowService extends Service {
             if (elapsedSeconds <= 0) continue;
             long notifyAtTimestamp = data.startTime + (data.spawnTime - data.notifyTime) * 1000;
             if (notifyAtTimestamp <= now) {
-                nextNotifyTime = now;
-                break;
+                notifyAtTimestamp = now + 1;
             }
             if (notifyAtTimestamp < nextNotifyTime) {
                 nextNotifyTime = notifyAtTimestamp;
@@ -1445,6 +1435,9 @@ public class FloatingWindowService extends Service {
     }
 
     void doNotificationChecks() {
+        if (isCheckingNotifications) return;
+        isCheckingNotifications = true;
+
         notifiedBossIds.clear();
 
         List<RowData> currentData = dataManager.getAllBosses();
@@ -1509,8 +1502,8 @@ public class FloatingWindowService extends Service {
         }
 
         if (suppressNextNotify) suppressNextNotify = false;
-        invalidateNotifyCache();
         scheduleNextNotification();
+        isCheckingNotifications = false;
     }
 
     private void checkAndNotify(RowData data, long elapsedSeconds) {

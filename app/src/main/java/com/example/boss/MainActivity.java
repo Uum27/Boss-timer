@@ -1349,15 +1349,27 @@ public class MainActivity extends AppCompatActivity {
         Button btnDecrease = dialogView.findViewById(R.id.btn_open_decrease);
         Button btnRestart = dialogView.findViewById(R.id.btn_restart_decrease);
         TextView tvDecreaseStatus = dialogView.findViewById(R.id.tv_decrease_status);
+        TextView tvDecreaseCountInfo = dialogView.findViewById(R.id.tv_decrease_count_info);
+        TextView tvDecreaseTimeInfo = dialogView.findViewById(R.id.tv_decrease_time_info);
 
         if (data.decreasingMode && data.deathCount < data.decreasingCount) {
             tvDecreaseStatus.setText(String.format(getString(R.string.decrease_current), data.deathCount, data.decreasingCount));
+            tvDecreaseCountInfo.setText(getString(R.string.decrease_count) + " " + data.decreasingCount);
+            tvDecreaseCountInfo.setVisibility(View.VISIBLE);
+            tvDecreaseTimeInfo.setText(formatDecreaseSeconds(data.decreasingSeconds));
+            tvDecreaseTimeInfo.setVisibility(View.VISIBLE);
             btnRestart.setVisibility(View.VISIBLE);
         } else if (data.decreasingMode) {
             tvDecreaseStatus.setText(getString(R.string.decrease_mode) + " ✓");
+            tvDecreaseCountInfo.setText(getString(R.string.decrease_count) + " " + data.decreasingCount);
+            tvDecreaseCountInfo.setVisibility(View.VISIBLE);
+            tvDecreaseTimeInfo.setText(formatDecreaseSeconds(data.decreasingSeconds));
+            tvDecreaseTimeInfo.setVisibility(View.VISIBLE);
             btnRestart.setVisibility(View.VISIBLE);
         } else {
             tvDecreaseStatus.setText("");
+            tvDecreaseCountInfo.setVisibility(View.GONE);
+            tvDecreaseTimeInfo.setVisibility(View.GONE);
             btnRestart.setVisibility(View.GONE);
         }
 
@@ -1625,6 +1637,20 @@ public class MainActivity extends AppCompatActivity {
             return Long.parseLong(str);
         } catch (NumberFormatException e) {
             return defaultValue;
+        }
+    }
+
+    private String formatDecreaseSeconds(long seconds) {
+        if (seconds <= 0) return "";
+        long h = seconds / 3600;
+        long m = (seconds % 3600) / 60;
+        long s = seconds % 60;
+        if (h > 0) {
+            return getString(R.string.decrease_time) + " " + h + ":" + String.format(Locale.getDefault(), "%02d", m) + ":" + String.format(Locale.getDefault(), "%02d", s);
+        } else if (m > 0) {
+            return getString(R.string.decrease_time) + " " + m + ":" + String.format(Locale.getDefault(), "%02d", s);
+        } else {
+            return getString(R.string.decrease_time) + " " + s + getString(R.string.input_second_hint);
         }
     }
 
