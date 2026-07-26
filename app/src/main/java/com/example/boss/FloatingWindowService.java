@@ -1,5 +1,6 @@
 package com.example.boss;
 
+import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -14,12 +15,16 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -98,7 +103,6 @@ public class FloatingWindowService extends Service {
     private Runnable scheduledNotifyRunnable;
     private AlarmManager alarmManager;
     private PendingIntent alarmPendingIntent;
-    private static final long ALARM_MIN_DELAY = 30000;
     private boolean isCheckingNotifications = false;
     private Vibrator vibrator;
     private NotificationManager notificationManager;
@@ -107,6 +111,11 @@ public class FloatingWindowService extends Service {
     private boolean hasSharedNotify = false;
     private boolean suppressNextNotify = false;
     private java.util.Set<Long> notifiedBossIds = new java.util.HashSet<>();
+
+    private PowerManager.WakeLock wakeLock;
+    private static final long MIN_WAKELOCK_TIMEOUT_SEC = 5 * 60;
+    private long lastVibrateTime = 0;
+    private long lastSyncTime = 0;
 
     // 标题栏控件缓存
     private TextView tvTitleName, tvTitleRefresh, tvTitleRemaining, tvTitleReset;
@@ -168,6 +177,8 @@ public class FloatingWindowService extends Service {
             bossChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             notificationManager.createNotificationChannel(bossChannel);
         }
+
+        alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
         EventBus.getDefault().register(this);
         dbHelper = new DBHelper(this);
@@ -1336,7 +1347,7 @@ public class FloatingWindowService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (!alarmManager.canScheduleExactAlarms()) return;
         }
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTimeMs, alarmPendingIntent);
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTimeMs, alarmPendingIntent);
     }
 
     private void cancelAlarm() {
@@ -1424,11 +1435,8 @@ public class FloatingWindowService extends Service {
                 doNotificationChecks();
             };
             globalTickHandler.postDelayed(scheduledNotifyRunnable, delay);
-            if (delay > ALARM_MIN_DELAY) {
-                setAlarm(nextNotifyTime - 5000);
-            } else {
-                cancelAlarm();
-            }
+            long alarmTime = Math.max(nextNotifyTime - 5000, now + 5000);
+            setAlarm(alarmTime);
         } else {
             cancelAlarm();
         }
@@ -1437,6 +1445,29 @@ public class FloatingWindowService extends Service {
     void doNotificationChecks() {
         if (isCheckingNotifications) return;
         isCheckingNotifications = true;
+        boolean anyNotified = false;
+        try {
+
+        manageWakeLock();
+
+        if (dataManager.isSharedMode()) {
+            long minRemaining = Long.MAX_VALUE;
+            List<RowData> all = dataManager.getAllBosses();
+            for (RowData d : all) {
+                if (d.spawnTime <= 0 || !d.needNotify) continue;
+                long r = d.spawnTime - ((System.currentTimeMillis() - d.startTime) / 1000);
+                if (r > 0 && r < minRemaining) minRemaining = r;
+            }
+            long cooldown;
+            if (minRemaining <= 900) cooldown = 7 * 60 * 1000L;
+            else if (minRemaining <= 1800) cooldown = 30 * 60 * 1000L;
+            else if (minRemaining <= 3600) cooldown = 60 * 60 * 1000L;
+            else cooldown = 120 * 60 * 1000L;
+            if (System.currentTimeMillis() - lastSyncTime >= cooldown) {
+                lastSyncTime = System.currentTimeMillis();
+                dataManager.forceSync();
+            }
+        }
 
         notifiedBossIds.clear();
 
@@ -1444,7 +1475,7 @@ public class FloatingWindowService extends Service {
         for (RowData data : currentData) {
             long elapsedSeconds = data.spawnTime - ((System.currentTimeMillis() - data.startTime) / 1000);
             if (elapsedSeconds >= 0) {
-                checkAndNotify(data, elapsedSeconds);
+                if (checkAndNotify(data, elapsedSeconds)) anyNotified = true;
             }
         }
 
@@ -1453,7 +1484,7 @@ public class FloatingWindowService extends Service {
             for (RowData b : localBosses) {
                 long el = b.spawnTime - ((System.currentTimeMillis() - b.startTime) / 1000);
                 if (el >= 0 && el <= b.notifyTime && !b.isNotified && b.needNotify) {
-                    checkAndNotify(b, el);
+                    if (checkAndNotify(b, el)) anyNotified = true;
                     if (!hasLocalNotify) {
                         hasLocalNotify = true;
                         updateShareButtonText();
@@ -1467,7 +1498,7 @@ public class FloatingWindowService extends Service {
                 for (RowData b : sharedBosses) {
                     long el = b.spawnTime - ((System.currentTimeMillis() - b.startTime) / 1000);
                     if (el >= 0 && el <= b.notifyTime && !b.isNotified && b.needNotify) {
-                        checkAndNotify(b, el);
+                        if (checkAndNotify(b, el)) anyNotified = true;
                         if (!hasSharedNotify) {
                             hasSharedNotify = true;
                             updateShareButtonText();
@@ -1490,7 +1521,7 @@ public class FloatingWindowService extends Service {
             for (RowData b : roomBosses) {
                 long el = b.spawnTime - ((System.currentTimeMillis() - b.startTime) / 1000);
                 if (el >= 0 && el <= b.notifyTime && !b.isNotified && b.needNotify) {
-                    checkAndNotify(b, el);
+                    if (checkAndNotify(b, el)) anyNotified = true;
                     hasNotify = true;
                 }
             }
@@ -1501,20 +1532,72 @@ public class FloatingWindowService extends Service {
             }
         }
 
+        if (anyNotified && vibrator != null && vibrator.hasVibrator()) {
+            long now = System.currentTimeMillis();
+            if (now - lastVibrateTime > 5000) {
+                lastVibrateTime = now;
+                vibrator.cancel();
+                vibrator.vibrate(1000);
+            }
+        }
+
         if (suppressNextNotify) suppressNextNotify = false;
         scheduleNextNotification();
-        isCheckingNotifications = false;
+        } finally {
+            isCheckingNotifications = false;
+        }
     }
 
-    private void checkAndNotify(RowData data, long elapsedSeconds) {
-        if (suppressNextNotify) return;
-        if (elapsedSeconds <= data.notifyTime && !data.isNotified && data.needNotify) {
-            if (notifiedBossIds.contains(data.id)) return;
-            notifiedBossIds.add(data.id);
-            if (vibrator != null && vibrator.hasVibrator()) {
-                vibrator.cancel();
-                vibrator.vibrate(1500);
+    private void manageWakeLock() {
+        long now = System.currentTimeMillis();
+        boolean needLock = false;
+        long maxNotifyTime = MIN_WAKELOCK_TIMEOUT_SEC;
+
+        List<RowData> allBosses = new ArrayList<>();
+        allBosses.addAll(dbHelper.getAllBosses());
+        String curRoomId = dataManager.getCurrentRoomId();
+        if (curRoomId != null) {
+            allBosses.addAll(dbHelper.getAllBossesByRoom(curRoomId));
+        }
+        List<String> otherRooms = dbHelper.getAllRoomIds();
+        for (String rId : otherRooms) {
+            if (!rId.equals(curRoomId) && isRoomFavorite(rId)) {
+                allBosses.addAll(dbHelper.getAllBossesByRoom(rId));
             }
+        }
+        java.util.Map<Long, RowData> deduped = new java.util.HashMap<>();
+        for (RowData d : allBosses) {
+            deduped.put(d.id, d);
+        }
+        for (RowData data : deduped.values()) {
+            long remaining = data.spawnTime - ((now - data.startTime) / 1000);
+            if (remaining > 0 && remaining <= data.notifyTime && data.needNotify && !data.isNotified) {
+                needLock = true;
+                if (data.notifyTime > maxNotifyTime) maxNotifyTime = data.notifyTime;
+            }
+        }
+
+        if (needLock) {
+            if (wakeLock == null || !wakeLock.isHeld()) {
+                PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                if (pm != null) {
+                    wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BossTimer:notify");
+                    wakeLock.acquire(maxNotifyTime * 1000);
+                }
+            }
+        } else {
+            if (wakeLock != null && wakeLock.isHeld()) {
+                wakeLock.release();
+                wakeLock = null;
+            }
+        }
+    }
+
+    private boolean checkAndNotify(RowData data, long elapsedSeconds) {
+        if (suppressNextNotify) return false;
+        if (elapsedSeconds <= data.notifyTime && !data.isNotified && data.needNotify) {
+            if (notifiedBossIds.contains(data.id)) return false;
+            notifiedBossIds.add(data.id);
             String title = getString(R.string.notification_title);
             String content = String.format(Locale.getDefault(),
                     getString(R.string.notification_content),
@@ -1533,7 +1616,9 @@ public class FloatingWindowService extends Service {
             notificationManager.notify(BOSS_NOTIFICATION_ID, builder.build());
             data.isNotified = true;
             dataManager.setIsNotified(data.id, true);
+            return true;
         }
+        return false;
     }
 
     private void minimize() {
@@ -1590,6 +1675,11 @@ public class FloatingWindowService extends Service {
         }
 
         stopGlobalTick();
+
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+            wakeLock = null;
+        }
 
         if (adapter != null) {
             adapter.stopTimer();

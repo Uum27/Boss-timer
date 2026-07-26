@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.method.ScrollingMovementMethod;
@@ -969,7 +970,7 @@ public class MainActivity extends AppCompatActivity {
         Window w = dialog.getWindow();
         if (w != null) {
             w.setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.9),
-                    (int) (getResources().getDisplayMetrics().heightPixels * 0.8));
+                    WindowManager.LayoutParams.WRAP_CONTENT);
         }
     }
 
@@ -1521,8 +1522,6 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle(R.string.dialog_title_edit_time)
                 .setView(dialogView)
                 .setPositiveButton(R.string.dialog_button_ok, (di, which) -> {
-                    long oldStartTime = data.startTime;
-                    long oldSpawnTime = data.spawnTime;
                     String killedDayText = killedDay.getText().toString().trim();
                     String killedHourText = killedHour.getText().toString().trim();
                     String killedMinuteText = killedMinute.getText().toString().trim();
@@ -1609,12 +1608,10 @@ public class MainActivity extends AppCompatActivity {
 
                     if (wasSharedMode) {
                         dataManager.editBossShared(data);
-                        dataManager.addEditTimeLog(data, data.editTimeType, oldStartTime, oldSpawnTime);
                     } else {
                         dataManager.editBoss(data);
                     }
                     EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, data));
-                    adapter.notifyDataSetChanged();
                     Toast.makeText(this, R.string.edit_time_success, Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton(R.string.dialog_button_cancel, null)
@@ -1688,8 +1685,6 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle(R.string.dialog_title_edit_remaining)
                 .setView(dialogView)
                 .setPositiveButton(R.string.dialog_button_ok, (di, which) -> {
-                    long oldStartTime = data.startTime;
-                    long oldSpawnTime = data.spawnTime;
                     String hourText = hourInput.getText().toString().trim();
                     String minuteText = minuteInput.getText().toString().trim();
                     String secondText = secondInput.getText().toString().trim();
@@ -1714,12 +1709,10 @@ public class MainActivity extends AppCompatActivity {
                         data.setSpawnTime(this);
                     if (wasSharedMode) {
                         dataManager.editBossShared(data);
-                        dataManager.addEditTimeLog(data, data.editTimeType, oldStartTime, oldSpawnTime);
                     } else {
                         dataManager.editBoss(data);
                     }
-                    EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, data));
-                        adapter.notifyDataSetChanged();
+                        EventBus.getDefault().post(new UpdateFloatWindowEvent(EventTypes.EDIT_ITEM, data));
                     } else {
                         Toast.makeText(this, R.string.edit_remaining_invalid, Toast.LENGTH_SHORT).show();
                     }

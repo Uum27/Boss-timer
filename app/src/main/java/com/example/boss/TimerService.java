@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
 
 import androidx.core.app.NotificationCompat;
@@ -96,8 +97,7 @@ public class TimerService extends Service {
         // 震动提醒
         if (vibrator != null && vibrator.hasVibrator()) {
             vibrator.cancel();
-            long[] pattern = {0, 1500};
-            vibrator.vibrate(pattern, -1);
+            vibrator.vibrate(1000);
         }
 
         // 构建通知内容

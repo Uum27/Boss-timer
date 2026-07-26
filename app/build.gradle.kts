@@ -15,8 +15,8 @@ android {
         applicationId = "com.example.boss"
         minSdk = 24
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.8.3"
+        versionCode = 9
+        versionName = "1.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
