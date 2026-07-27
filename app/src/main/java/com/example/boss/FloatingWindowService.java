@@ -116,6 +116,7 @@ public class FloatingWindowService extends Service {
     private static final long MIN_WAKELOCK_TIMEOUT_SEC = 5 * 60;
     private long lastVibrateTime = 0;
     private long lastSyncTime = 0;
+    private long lastAlarmTarget = 0;
 
     // 标题栏控件缓存
     private TextView tvTitleName, tvTitleRefresh, tvTitleRemaining, tvTitleReset;
@@ -1435,9 +1436,13 @@ public class FloatingWindowService extends Service {
                 doNotificationChecks();
             };
             globalTickHandler.postDelayed(scheduledNotifyRunnable, delay);
-            long alarmTime = Math.max(nextNotifyTime - 5000, now + 5000);
-            setAlarm(alarmTime);
+            long alarmTime = Math.max(nextNotifyTime - 5000, now + 1000);
+            if (Math.abs(alarmTime - lastAlarmTarget) > 1000) {
+                lastAlarmTarget = alarmTime;
+                setAlarm(alarmTime);
+            }
         } else {
+            lastAlarmTarget = 0;
             cancelAlarm();
         }
     }

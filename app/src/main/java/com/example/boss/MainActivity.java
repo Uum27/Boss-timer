@@ -1839,13 +1839,10 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
             if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
-                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-                if (prefs.getBoolean("no_more_alarm_prompt", false)) return;
                 new AlertDialog.Builder(this)
                         .setTitle(R.string.alarm_permission_title)
                         .setMessage(R.string.alarm_permission_message)
                         .setPositiveButton(R.string.go_to_settings, (dialog, which) -> {
-                            prefs.edit().putBoolean("no_more_alarm_prompt", true).apply();
                             Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
                             intent.setData(Uri.parse("package:" + getPackageName()));
                             startActivity(intent);
