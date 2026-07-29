@@ -11,6 +11,7 @@ public class AlarmReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         FloatingWindowService svc = FloatingWindowService.getInstance();
         if (svc != null) {
+            svc.onAlarmFired();
             svc.doNotificationChecks();
         } else {
             Intent serviceIntent = new Intent(context, FloatingWindowService.class);

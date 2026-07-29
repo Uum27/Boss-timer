@@ -521,6 +521,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private AlertDialog myRoomsDialog;
+    private AlertDialog memberListDialog;
 
     private void showMyRoomsDialog() {
         if (!getSharedPreferences(PREFS_AUTH, MODE_PRIVATE).getBoolean(KEY_AUTHED, false)) return;
@@ -679,6 +680,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showMemberList(String roomId) {
+        if (memberListDialog != null && memberListDialog.isShowing()) {
+            memberListDialog.dismiss();
+        }
         dataManager.fetchRoomMembers(roomId, new DataManager.Callback<String>() {
             @Override public void onResult(String result) {
                 try {
@@ -785,6 +789,7 @@ public class MainActivity extends AppCompatActivity {
 
                     AlertDialog memberDialog = new AlertDialog.Builder(MainActivity.this).setView(root).create();
                     memberDialog.show();
+                    memberListDialog = memberDialog;
                     Window w = memberDialog.getWindow();
                     if (w != null) {
                         w.setLayout((int)(getResources().getDisplayMetrics().widthPixels * 0.9),
@@ -964,6 +969,11 @@ public class MainActivity extends AppCompatActivity {
                     showRoomError(error);
                 }
             });
+        });
+
+        dialogView.findViewById(R.id.btn_permission_guide).setOnClickListener(v -> {
+            dialog.dismiss();
+            showPermissionGuide();
         });
 
         dialog.show();
@@ -1835,10 +1845,54 @@ public class MainActivity extends AppCompatActivity {
         searchHandler.postDelayed(searchRunnable, 300);
     }
 
+    private void showPermissionGuide() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.battery_opt_title)
+                .setMessage(R.string.battery_opt_message)
+                .setPositiveButton(R.string.go_to_settings, (d, w) -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                        intent.setData(Uri.parse("package:" + getPackageName()));
+                        startActivity(intent);
+                    }
+                })
+                .setNegativeButton(R.string.battery_opt_negative, (d, w) -> showAlarmPermissionDialog())
+                .setCancelable(false)
+                .show();
+    }
+
+    private void showAlarmPermissionDialog() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.alarm_permission_title)
+                    .setMessage(R.string.alarm_permission_message)
+                    .setPositiveButton(R.string.go_to_settings, (d, w) -> {
+                        Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                        intent.setData(Uri.parse("package:" + getPackageName()));
+                        startActivity(intent);
+                    })
+                    .setNegativeButton(R.string.battery_opt_negative, (d, w) -> showBackgroundRunHint())
+                    .setCancelable(false)
+                    .show();
+        } else {
+            showBackgroundRunHint();
+        }
+    }
+
+    private void showBackgroundRunHint() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.battery_opt_title)
+                .setMessage(R.string.background_run_hint)
+                .setNegativeButton(R.string.dialog_button_ok, null)
+                .setCancelable(false)
+                .show();
+    }
+
     private void checkAndRequestExactAlarmPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
             if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+                Toast.makeText(this, R.string.alarm_permission_denied, Toast.LENGTH_LONG).show();
                 new AlertDialog.Builder(this)
                         .setTitle(R.string.alarm_permission_title)
                         .setMessage(R.string.alarm_permission_message)
@@ -1850,11 +1904,17 @@ public class MainActivity extends AppCompatActivity {
                         .setNegativeButton(R.string.battery_opt_negative, null)
                         .setCancelable(false)
                         .show();
+            } else {
+                Toast.makeText(this, R.string.alarm_permission_granted, Toast.LENGTH_SHORT).show();
             }
         }
     }
 
     private void checkAndRequestBatteryOptimization() {
+        checkAndRequestBatteryOptimization(null);
+    }
+
+    private void checkAndRequestBatteryOptimization(Runnable onDone) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
             if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(getPackageName())) {
@@ -1866,11 +1926,15 @@ public class MainActivity extends AppCompatActivity {
                             intent.setData(Uri.parse("package:" + getPackageName()));
                             startActivityForResult(intent, REQUEST_CODE_BATTERY_OPTIMIZATION);
                         })
-                        .setNegativeButton(R.string.battery_opt_negative, null)
+                        .setNegativeButton(R.string.battery_opt_negative, (dialog, which) -> {
+                            if (onDone != null) onDone.run();
+                        })
                         .setCancelable(false)
                         .show();
+                return;
             }
         }
+        if (onDone != null) onDone.run();
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

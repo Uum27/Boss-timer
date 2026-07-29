@@ -138,8 +138,9 @@ public class DataManager {
         this.myUserName = userName;
         prefs.edit().putString(KEY_USER_NAME, userName).apply();
         if (isSharedMode && currentRoomId != null && myUserId != null) {
+            String savedPwd = context != null ? context.getSharedPreferences("boss_room_pwds", android.content.Context.MODE_PRIVATE).getString(currentRoomId, "") : "";
             executor.execute(() -> {
-                try { cloudHelper.updateMyName(currentRoomId, myUserId, userName); }
+                try { cloudHelper.updateMyName(currentRoomId, myUserId, userName, savedPwd); }
                 catch (Exception e) { Log.e(TAG, "updateMyName failed", e); }
             });
             addUserRenameLog(oldName, userName);

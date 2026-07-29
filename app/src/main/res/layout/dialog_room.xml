@@ -100,5 +100,19 @@
         android:text="@string/room_create"
         android:textSize="16sp" />
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:background="#D0D0D0" />
+
+    <Button
+        android:id="@+id/btn_permission_guide"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="@string/permission_guide"
+        android:textSize="16sp" />
+
 </LinearLayout>
 </ScrollView>

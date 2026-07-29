@@ -146,16 +146,15 @@ async function joinRoom(params) {
   const room = await getRoom(roomId);
   if (!room) return errResp('room not found');
 
-  if (room.password && room.ownerUserId !== userId && room.password !== (password || '')) {
-    return errResp('wrong password');
-  }
-
   if (room.banned && room.banned.includes(userId)) {
     return errResp('banned');
   }
 
   let member = await getMember(roomId, userId);
   if (!member) {
+    if (room.password && room.password !== (password || '')) {
+      return errResp('wrong password');
+    }
     await db.collection(MEMBERS).add({
       roomId,
       userId,

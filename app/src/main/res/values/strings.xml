@@ -101,6 +101,10 @@
     <string name="battery_opt_negative">稍后设置</string>
     <string name="alarm_permission_title">闹钟权限</string>
     <string name="alarm_permission_message">为确保锁屏时Boss提醒不丢失，请允许"闹钟和提醒"权限</string>
+    <string name="alarm_permission_granted">已开启</string>
+    <string name="alarm_permission_denied">未开启</string>
+    <string name="permission_guide">权限引导</string>
+    <string name="background_run_hint">请前往系统设置 → 应用管理 → Boss计时器 → 开启"自启动"和"后台运行"权限</string>
 
     <!-- 默认占位文本 -->
     <string name="default_unknown">未知</string>

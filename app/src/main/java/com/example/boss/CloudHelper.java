@@ -168,8 +168,8 @@ public class CloudHelper {
         return request("POST", API_PREFIX + "/verifyAuth", "{\"code\":\"" + escapeJson(code) + "\"}");
     }
 
-    public String updateMyName(String roomId, String userId, String userName) throws Exception {
-        String body = "{\"roomId\":\"" + escapeJson(roomId) + "\",\"userId\":\"" + escapeJson(userId) + "\",\"userName\":\"" + escapeJson(userName) + "\"}";
+    public String updateMyName(String roomId, String userId, String userName, String password) throws Exception {
+        String body = "{\"roomId\":\"" + escapeJson(roomId) + "\",\"userId\":\"" + escapeJson(userId) + "\",\"userName\":\"" + escapeJson(userName) + "\",\"password\":\"" + escapeJson(password != null ? password : "") + "\"}";
         return request("POST", API_PREFIX + "/joinRoom", body);
     }
 

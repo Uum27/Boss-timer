@@ -118,6 +118,10 @@ public class FloatingWindowService extends Service {
     private long lastSyncTime = 0;
     private long lastAlarmTarget = 0;
 
+    void onAlarmFired() {
+        lastSyncTime = 0;
+    }
+
     // 标题栏控件缓存
     private TextView tvTitleName, tvTitleRefresh, tvTitleRemaining, tvTitleReset;
 
@@ -1065,6 +1069,9 @@ public class FloatingWindowService extends Service {
                 floatingView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
                     public void onGlobalLayout() {
+                        boolean panelShowing = (authPanel != null && authPanel.getVisibility() == View.VISIBLE)
+                                || (joinRoomPanel != null && joinRoomPanel.getVisibility() == View.VISIBLE);
+                        if (panelShowing) return;
                         updateScreenBounds();
                         int maxH = appUsableHeight - dpToPx(20);
                         if (floatingView != null && floatingView.getParent() != null) {
@@ -1346,9 +1353,16 @@ public class FloatingWindowService extends Service {
         cancelAlarm();
         alarmPendingIntent = AlarmReceiver.createPendingIntent(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (!alarmManager.canScheduleExactAlarms()) return;
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTimeMs, alarmPendingIntent);
+            } else {
+                alarmManager.setAlarmClock(
+                        new AlarmManager.AlarmClockInfo(triggerTimeMs, alarmPendingIntent),
+                        alarmPendingIntent);
+            }
+        } else {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTimeMs, alarmPendingIntent);
         }
-        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTimeMs, alarmPendingIntent);
     }
 
     private void cancelAlarm() {
@@ -1415,6 +1429,7 @@ public class FloatingWindowService extends Service {
             }
         }
 
+        boolean isNotifyAlarm = false;
         for (RowData data : deduped.values()) {
             if (!data.needNotify || data.isNotified || data.spawnTime <= 0) continue;
             long elapsedSeconds = data.spawnTime - ((now - data.startTime) / 1000);
@@ -1425,6 +1440,7 @@ public class FloatingWindowService extends Service {
             }
             if (notifyAtTimestamp < nextNotifyTime) {
                 nextNotifyTime = notifyAtTimestamp;
+                isNotifyAlarm = true;
             }
         }
 
@@ -1436,8 +1452,9 @@ public class FloatingWindowService extends Service {
                 doNotificationChecks();
             };
             globalTickHandler.postDelayed(scheduledNotifyRunnable, delay);
-            long alarmTime = Math.max(nextNotifyTime - 5000, now + 1000);
-            if (Math.abs(alarmTime - lastAlarmTarget) > 1000) {
+            long alarmOffset = isNotifyAlarm ? 15 * 60 * 1000L : 5000L;
+            long alarmTime = Math.max(nextNotifyTime - alarmOffset, now + 1000);
+            if (now >= lastAlarmTarget || Math.abs(alarmTime - lastAlarmTarget) >= 1000) {
                 lastAlarmTarget = alarmTime;
                 setAlarm(alarmTime);
             }
@@ -1457,17 +1474,28 @@ public class FloatingWindowService extends Service {
 
         if (dataManager.isSharedMode()) {
             long minRemaining = Long.MAX_VALUE;
+            boolean nearNotify = false;
             List<RowData> all = dataManager.getAllBosses();
             for (RowData d : all) {
                 if (d.spawnTime <= 0 || !d.needNotify) continue;
                 long r = d.spawnTime - ((System.currentTimeMillis() - d.startTime) / 1000);
                 if (r > 0 && r < minRemaining) minRemaining = r;
+                if (r > 0 && r <= d.notifyTime && !d.isNotified) nearNotify = true;
             }
             long cooldown;
-            if (minRemaining <= 900) cooldown = 7 * 60 * 1000L;
-            else if (minRemaining <= 1800) cooldown = 30 * 60 * 1000L;
-            else if (minRemaining <= 3600) cooldown = 60 * 60 * 1000L;
-            else cooldown = 120 * 60 * 1000L;
+            if (nearNotify) {
+                cooldown = 5000;
+            } else if (minRemaining <= 420) {
+                cooldown = 140 * 1000L;
+            } else if (minRemaining <= 900) {
+                cooldown = 7 * 60 * 1000L;
+            } else if (minRemaining <= 1800) {
+                cooldown = 30 * 60 * 1000L;
+            } else if (minRemaining <= 3600) {
+                cooldown = 60 * 60 * 1000L;
+            } else {
+                cooldown = 120 * 60 * 1000L;
+            }
             if (System.currentTimeMillis() - lastSyncTime >= cooldown) {
                 lastSyncTime = System.currentTimeMillis();
                 dataManager.forceSync();
@@ -1576,19 +1604,20 @@ public class FloatingWindowService extends Service {
         }
         for (RowData data : deduped.values()) {
             long remaining = data.spawnTime - ((now - data.startTime) / 1000);
-            if (remaining > 0 && remaining <= data.notifyTime && data.needNotify && !data.isNotified) {
+            if (remaining > 0 && remaining <= data.notifyTime + 900 && data.needNotify && !data.isNotified) {
                 needLock = true;
                 if (data.notifyTime > maxNotifyTime) maxNotifyTime = data.notifyTime;
             }
         }
 
         if (needLock) {
-            if (wakeLock == null || !wakeLock.isHeld()) {
-                PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-                if (pm != null) {
-                    wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BossTimer:notify");
-                    wakeLock.acquire(maxNotifyTime * 1000);
-                }
+            if (wakeLock != null && wakeLock.isHeld()) {
+                wakeLock.release();
+            }
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm != null) {
+                wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BossTimer:notify");
+                wakeLock.acquire(maxNotifyTime * 1000);
             }
         } else {
             if (wakeLock != null && wakeLock.isHeld()) {
